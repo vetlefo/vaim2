@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  test-neo4j:
+    image: neo4j:5-enterprise
+    environment:
+      NEO4J_AUTH: neo4j/test
+      NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
+      NEO4J_dbms_security_procedures_unrestricted: "gds.*"
+      NEO4J_dbms_security_procedures_whitelist: "gds.*"
+    ports:
+      - "7475:7474"  # Different port to avoid conflicts with dev environment
+      - "7688:7687"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - test-network
+
+  test-kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      - test-zookeeper
+    ports:
+      - "9093:9092"  # Different port to avoid conflicts with dev environment
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: test-zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://test-kafka:29092,PLAINTEXT_HOST://localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - test-network
+
+  test-zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    ports:
+      - "2182:2181"  # Different port to avoid conflicts with dev environment
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - test-network
+
+  test-redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"  # Different port to avoid conflicts with dev environment
+    command: redis-server --appendonly yes
+    networks:
+      - test-network
+
+  graph-analytics-service-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - test-neo4j
+      - test-kafka
+      - test-redis
+    environment:
+      NODE_ENV: test
+      PORT: 3002
+      NEO4J_URI: bolt://test-neo4j:7687
+      NEO4J_USERNAME: neo4j
+      NEO4J_PASSWORD: test
+      NEO4J_DATABASE: neo4j
+      KAFKA_BROKERS: test-kafka:29092
+      KAFKA_CLIENT_ID: graph-analytics-service-test
+      KAFKA_GROUP_ID: graph-analytics-group-test
+      REDIS_HOST: test-redis
+      REDIS_PORT: 6379
+      JWT_SECRET: test-jwt-secret
+    command: npm run test:e2e
+    networks:
+      - test-network
+
+networks:
+  test-network:
+    driver: bridge

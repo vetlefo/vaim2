@@ -1,0 +1,71 @@
+# Stage 1: Development
+FROM node:20-slim as development
+
+# Install additional system dependencies that might be needed for quantum/HPC libraries
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /usr/src/app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy source files
+COPY . .
+
+# Build TypeScript code
+RUN npm run build
+
+# Stage 2: Production
+FROM node:20-slim as production
+
+# Install system dependencies needed for runtime
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install potential future quantum/HPC Python dependencies
+# Commented out for now, uncomment and modify as needed
+# RUN pip3 install qiskit pennylane numpy scipy
+
+WORKDIR /usr/src/app
+
+# Copy package files
+COPY package*.json ./
+
+# Install production dependencies only
+RUN npm install --only=production
+
+# Copy built JavaScript files
+COPY --from=development /usr/src/app/dist ./dist
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV POST_QUANTUM_EXPERIMENT=false
+ENV QUANTUM_SIMULATOR_MODE=basic
+
+# Create a non-root user
+RUN useradd -r -u 1001 -g root quantum-user
+USER quantum-user
+
+# Start the service
+CMD ["node", "dist/quantum-experiments.service.js"]
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s \
+    CMD curl -f http://localhost:3000/health || exit 1
+
+# Expose port if needed
+EXPOSE 3000
+
+# Labels for documentation
+LABEL maintainer="VAIM Team" \
+      description="Research environment for quantum computing and HPC experiments" \
+      version="0.1.0"
