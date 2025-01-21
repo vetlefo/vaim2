@@ -18,43 +18,63 @@ This document outlines the step-by-step implementation plan for the authenticati
   - Role decorator ✓
   - JWT guard ✓
   - Roles guard ✓
+- Authentication Module Implementation ✓
+  - Auth module structure ✓
+  - JWT strategy ✓
+  - Auth service with login functionality ✓
+  - Auth controller with login endpoint ✓
+  - Redis integration for token blacklisting ✓
+  - Logout functionality with token invalidation ✓
+  - Token refresh mechanism ✓
+  - Refresh token rotation ✓
+
+## Token Management Implementation
+
+### Token Blacklisting
+Redis is used to store blacklisted tokens with their remaining time-to-live (TTL). When a user logs out, their token is added to the blacklist until it expires. The JWT strategy checks if a token is blacklisted before validating it.
+
+### Redis Module
+- Handles token blacklisting operations
+- Stores tokens with their expiration time
+- Automatically removes expired tokens
+- Manages refresh token storage and rotation
+
+### Logout Flow
+1. User sends token in Authorization header
+2. Token is validated and added to blacklist
+3. Token remains blacklisted until its original expiration time
+4. Subsequent requests with blacklisted token are rejected
+
+### Refresh Token Flow
+1. User sends refresh token to /auth/refresh endpoint
+2. Token is validated and checked against Redis storage
+3. Old refresh token is invalidated
+4. New access and refresh tokens are generated
+5. New refresh token is stored in Redis with TTL
 
 ## Next Steps
 
-### 1. Authentication Module Implementation
-- Create auth module structure
-- Implement JWT strategy
-- Create auth service with:
-  - Login functionality
-  - Token generation
-  - Password hashing
-  - Token refresh mechanism
-- Add auth controller with endpoints:
-  - POST /auth/login
-  - POST /auth/logout
-  - POST /auth/refresh
-
-### 2. OAuth2 Integration
+### 1. OAuth2 Integration
 - Configure OAuth2 strategy
 - Implement provider-specific logic
 - Add OAuth2 endpoints:
   - GET /auth/oauth2/:provider
   - GET /auth/oauth2/:provider/callback
 
-### 3. Security Enhancements
+### 2. Security Enhancements
 - Add rate limiting
 - Implement request validation
 - Configure CORS
 - Set up security headers
 - Define password policies
 
-### 4. Testing
+### 3. Testing
 - Unit tests for services
 - E2E tests for auth flows
 - Integration tests for user operations
 - Security testing scenarios
 
-### 5. Documentation
+### 4. Documentation
 - API documentation
 - Authentication flows
 - Environment setup guide
@@ -73,14 +93,20 @@ DB_NAME=auth
 # Application Configuration
 PORT=3000
 NODE_ENV=development
+
+# JWT Configuration
+JWT_SECRET=your-secret-key
+JWT_EXPIRATION=15m
+REFRESH_TOKEN_EXPIRATION=7d
+
+# Redis Configuration
+REDIS_HOST=redis
+REDIS_PORT=6379
+REDIS_PASSWORD=your-redis-password
 ```
 
 To be added:
 ```
-# JWT Configuration
-JWT_SECRET=
-JWT_EXPIRATION=
-
 # OAuth2 Configuration
 OAUTH2_CLIENT_ID=
 OAUTH2_CLIENT_SECRET=
@@ -101,6 +127,7 @@ Installed:
 - @nestjs/typeorm
 - @nestjs/passport
 - @nestjs/jwt
+- @nestjs/cache-manager
 - passport
 - passport-jwt
 - passport-oauth2
@@ -109,18 +136,13 @@ Installed:
 - class-transformer
 - typeorm
 - pg
+- cache-manager
+- cache-manager-redis-store
+- uuid
 
-## Database Schema
-### Users Table
-- id (UUID) ✓
-- email (unique) ✓
-- password (hashed) ✓
-- firstName ✓
-- lastName ✓
-- role ✓
-- lastLogin ✓
-- createdAt ✓
-- updatedAt ✓
+To be installed:
+- @nestjs/throttler (for rate limiting)
+- helmet (for security headers)
 
 ## API Endpoints Status
 ### User Management (Protected by JWT & Roles Guard)
@@ -130,11 +152,11 @@ Installed:
 - PATCH /users/:id ✓
 - DELETE /users/:id ✓
 
-### Authentication (To be implemented)
-- POST /auth/login
-- POST /auth/logout
-- POST /auth/refresh
-- GET /auth/profile
+### Authentication
+- POST /auth/login ✓
+- POST /auth/logout ✓
+- POST /auth/refresh ✓
+- GET /auth/profile (To be implemented)
 
 ### OAuth2 (To be implemented)
 - GET /auth/oauth2/:provider
