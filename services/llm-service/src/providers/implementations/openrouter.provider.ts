@@ -9,16 +9,29 @@ import {
   LLMErrorType,
 } from '@app/interfaces/provider.interface';
 
+interface ModelParameters {
+  temperature_p50: number;
+  top_p_p50: number;
+  frequency_penalty_p50: number;
+  presence_penalty_p50: number;
+  top_k_p50: number;
+  repetition_penalty_p50: number;
+}
+
 export default class OpenRouterProvider implements LLMProvider {
   private client: AxiosInstance;
   private readonly defaultModel: string;
   private readonly maxRetries: number;
   private readonly timeout: number;
+  private parameterCache: Map<string, ModelParameters>;
+  private parameterCacheTTL: number;
 
   constructor(config: OpenRouterConfig) {
     this.defaultModel = config.defaultModel || 'deepseek/deepseek-r1';
     this.maxRetries = config.maxRetries || 3;
     this.timeout = config.timeout || 30000;
+    this.parameterCache = new Map();
+    this.parameterCacheTTL = config.parameterCacheTTL || 3600000; // 1 hour default
 
     this.client = axios.create({
       baseURL: config.baseUrl || 'https://openrouter.ai/api/v1',
@@ -35,6 +48,8 @@ export default class OpenRouterProvider implements LLMProvider {
   async initialize(): Promise<void> {
     try {
       await this.healthCheck();
+      // Pre-fetch parameters for default model
+      await this.getModelParameters(this.defaultModel);
     } catch (error) {
       throw new LLMError(
         LLMErrorType.PROVIDER_ERROR,
@@ -45,24 +60,58 @@ export default class OpenRouterProvider implements LLMProvider {
     }
   }
 
+  private async getModelParameters(model: string): Promise<ModelParameters> {
+    const cached = this.parameterCache.get(model);
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const response = await this.client.get(`/parameters/${model}`);
+      const parameters = response.data;
+      this.parameterCache.set(model, parameters);
+      
+      // Clear cache after TTL
+      setTimeout(() => {
+        this.parameterCache.delete(model);
+      }, this.parameterCacheTTL);
+
+      return parameters;
+    } catch (error) {
+      // Return default parameters if fetch fails
+      return {
+        temperature_p50: 0.7,
+        top_p_p50: 0.95,
+        frequency_penalty_p50: 0.1,
+        presence_penalty_p50: 0.1,
+        top_k_p50: 40,
+        repetition_penalty_p50: 1.1,
+      };
+    }
+  }
+
   async complete(messages: ChatMessage[], options?: LLMRequestOptions): Promise<LLMResponse> {
     const startTime = Date.now();
     let retries = 0;
+    const model = options?.model || this.defaultModel;
+
+    // Get optimal parameters for model
+    const parameters = await this.getModelParameters(model);
 
     while (retries < this.maxRetries) {
       try {
         const response = await this.client.post('/chat/completions', {
-          model: options?.model || this.defaultModel,
+          model: model,
           messages: messages,
-          temperature: options?.temperature || 1.0,
+          temperature: options?.temperature || parameters.temperature_p50,
           max_tokens: options?.maxTokens || 4096,
-          top_p: options?.topP || 1.0,
-          top_k: 0,
-          frequency_penalty: options?.frequencyPenalty || 0.0,
-          presence_penalty: options?.presencePenalty || 0.0,
-          repetition_penalty: 1.0,
-          min_p: 0.0,
-          top_a: 0.0,
+          top_p: options?.topP || parameters.top_p_p50,
+          top_k: options?.topK || parameters.top_k_p50,
+          frequency_penalty: options?.frequencyPenalty || parameters.frequency_penalty_p50,
+          presence_penalty: options?.presencePenalty || parameters.presence_penalty_p50,
+          repetition_penalty: options?.repetitionPenalty || parameters.repetition_penalty_p50,
+          min_p: options?.minP || 0.0,
+          top_a: options?.topA || 0.0,
           stop: options?.stop || [],
           stream: false,
         });
@@ -78,7 +127,7 @@ export default class OpenRouterProvider implements LLMProvider {
             totalTokens: usage.total_tokens,
           },
           metadata: {
-            model: options?.model || this.defaultModel,
+            model: model,
             provider: 'openrouter',
             latency: Date.now() - startTime,
             timestamp: new Date().toISOString(),
@@ -106,24 +155,30 @@ export default class OpenRouterProvider implements LLMProvider {
     options?: LLMRequestOptions
   ): Promise<AsyncIterableIterator<LLMResponse>> {
     const startTime = Date.now();
+    const model = options?.model || this.defaultModel;
+    const parameters = await this.getModelParameters(model);
 
     try {
       const response = await this.client.post('/chat/completions', {
-        model: options?.model || this.defaultModel,
+        model: model,
         messages: messages,
-        temperature: options?.temperature || 0.7,
+        temperature: options?.temperature || parameters.temperature_p50,
         max_tokens: options?.maxTokens || 4096,
-        top_p: options?.topP || 1,
-        frequency_penalty: options?.frequencyPenalty,
-        presence_penalty: options?.presencePenalty,
-        stop: options?.stop,
+        top_p: options?.topP || parameters.top_p_p50,
+        top_k: options?.topK || parameters.top_k_p50,
+        frequency_penalty: options?.frequencyPenalty || parameters.frequency_penalty_p50,
+        presence_penalty: options?.presencePenalty || parameters.presence_penalty_p50,
+        repetition_penalty: options?.repetitionPenalty || parameters.repetition_penalty_p50,
+        min_p: options?.minP || 0.0,
+        top_a: options?.topA || 0.0,
+        stop: options?.stop || [],
         stream: true,
       }, {
         responseType: 'stream',
       });
 
       const stream = response.data;
-      return this.processStream(stream, startTime, options?.model || this.defaultModel);
+      return this.processStream(stream, startTime, model);
     } catch (error) {
       throw this.handleError(error);
     }

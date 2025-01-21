@@ -23,8 +23,12 @@ export interface LLMRequestOptions {
   temperature?: number;
   maxTokens?: number;
   topP?: number;
+  topK?: number;
   frequencyPenalty?: number;
   presencePenalty?: number;
+  repetitionPenalty?: number;
+  minP?: number;
+  topA?: number;
   stop?: string[];
   stream?: boolean;
   model?: string; // Specific model to use within a provider
@@ -91,6 +95,7 @@ export interface OpenRouterConfig extends ProviderConfig {
   siteUrl?: string;  // HTTP-Referer header
   siteName?: string; // X-Title header
   defaultModel?: string;
+  parameterCacheTTL?: number; // Time in ms to cache model parameters
 }
 
 /**
