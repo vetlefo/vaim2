@@ -1,157 +1,91 @@
-# Auth Service Implementation
+# Authentication Service Implementation
 
 ## Overview
-The authentication service provides secure user authentication and authorization through multiple methods:
-- Local authentication (username/password)
-- OAuth2 authentication (Google, GitHub)
-- JWT-based token management
-- Secure refresh token rotation
+The authentication service handles user authentication and authorization through various strategies including JWT, OAuth2 with Google, and GitHub integration.
 
-## Components
+## Authentication Strategies
 
-### Core Authentication
-- JWT-based token generation and validation
-- Secure password hashing with bcrypt
-- Redis-based token blacklisting
-- Refresh token rotation for enhanced security
+### JWT Strategy
+The JWT strategy validates tokens and handles user authentication through JSON Web Tokens.
 
-### OAuth2 Integration
-- Multi-provider support (Google, GitHub)
-- Provider-specific strategies with profile mapping
-- Secure state parameter validation
-- PKCE support for enhanced security
-- Token storage and management in Redis
-- Automatic user creation/linking for OAuth2 users
+Key features:
+- Runtime validation of JWT configuration
+- Token blacklist checking through Redis
+- Type-safe request handling with Express types
+- Null-safety checks for token extraction
 
-### Security Features
-- Role-based access control (RBAC)
-- Token blacklisting for secure logout
-- Refresh token rotation
-- Rate limiting
-- CSRF protection
-- Secure session management
+### OAuth2 Strategies
+
+#### Google Strategy
+Implements OAuth2 authentication with Google.
+
+Key features:
+- Runtime validation of OAuth configuration
+- Type-safe profile mapping
+- Request passthrough support for enhanced context
+- Proper typing for Google profile data
+
+#### GitHub Strategy
+Implements OAuth2 authentication with GitHub.
+
+Key features:
+- Runtime validation of OAuth configuration
+- Email fetching with primary email validation
+- Enhanced error handling for missing configurations
+- Type-safe profile mapping
 
 ## Configuration
+The service uses environment variables for configuration. All OAuth and JWT configurations are validated at runtime to ensure proper setup.
 
-### Environment Variables
-```bash
-# JWT Configuration
-JWT_SECRET=your-secret-key
-JWT_EXPIRATION=15m
-REFRESH_TOKEN_EXPIRATION=7d
-
-# Redis Configuration
-REDIS_HOST=redis
-REDIS_PORT=6379
-REDIS_PASSWORD=your-redis-password
-
-# Frontend Configuration
-FRONTEND_URL=http://localhost:4200
-
-# OAuth2 Configuration
-OAUTH2_STATE_SECRET=your-state-secret
-OAUTH2_ENABLED_PROVIDERS=google,github
-
-# Google OAuth2
+Required environment variables:
+```
+JWT_SECRET=your-jwt-secret
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
-GOOGLE_CALLBACK_URL=http://localhost:3000/auth/oauth2/google/callback
-
-# GitHub OAuth2
+GOOGLE_CALLBACK_URL=your-callback-url
 GITHUB_CLIENT_ID=your-github-client-id
 GITHUB_CLIENT_SECRET=your-github-client-secret
-GITHUB_CALLBACK_URL=http://localhost:3000/auth/oauth2/github/callback
+GITHUB_CALLBACK_URL=your-callback-url
 ```
 
-## API Endpoints
+## Type Safety Improvements
+Recent updates have enhanced type safety across the authentication system:
 
-### Local Authentication
-- `POST /auth/login` - Login with email/password
-- `POST /auth/refresh` - Refresh access token
-- `POST /auth/logout` - Logout and invalidate tokens
+1. Path Aliases
+   - Added TypeScript path aliases for better module resolution
+   - Improved import readability and maintainability
+   - Configured in tsconfig.json for consistent usage
 
-### OAuth2 Authentication
-- `GET /auth/oauth2/:provider` - Initiate OAuth2 flow
-- `GET /auth/oauth2/:provider/callback` - Handle OAuth2 callback
+2. Request Handling
+   - Added proper Express Request typing
+   - Improved error handling for undefined values
+   - Enhanced type definitions for OAuth profiles
 
-## Token Management
+3. Token Validation
+   - Added null checks for token extraction
+   - Improved error messages for missing tokens
+   - Type-safe token blacklist checking
 
-### Access Tokens
-- Short-lived JWT tokens (15 minutes)
-- Contains user ID, email, and roles
-- Used for API authentication
+## Error Handling
+The service implements comprehensive error handling:
 
-### Refresh Tokens
-- Long-lived tokens (7 days)
-- Stored in Redis with user association
-- One-time use with automatic rotation
-- Can be revoked server-side
+1. Configuration Errors
+   - Validation of environment variables at startup
+   - Clear error messages for missing configurations
+   - Type-safe configuration access
 
-## Security Considerations
+2. Authentication Errors
+   - Proper error handling for missing tokens
+   - Validation of OAuth provider responses
+   - Clear error messages for end users
 
-### OAuth2 Security
-- State parameter validation
-- PKCE implementation
-- Secure token storage
-- Provider-specific security measures
-- Automatic user linking
-- Profile data validation
+3. Token Errors
+   - Validation of token presence and format
+   - Blacklist checking before processing
+   - Type-safe token extraction and validation
 
-### General Security
-- Password hashing with bcrypt
-- Token encryption
-- HTTPS-only cookies
-- CSRF protection
-- Rate limiting
-- Input validation
-- Secure headers
-
-## Testing
-
-### Unit Tests
-- Authentication flows
-- Token management
-- Password hashing
-- Input validation
-
-### Integration Tests
-- OAuth2 provider integration
-- Token refresh flow
-- User management
-- Error handling
-
-### E2E Tests
-- Complete authentication flows
-- OAuth2 provider flows
-- Error scenarios
-- Security measures
-
-## Monitoring
-
-### Metrics
-- Authentication success/failure rates
-- Token refresh rates
-- OAuth2 provider usage
-- Error rates by type
-- Response times
-
-### Alerts
-- High failure rates
-- Unusual traffic patterns
-- Token validation failures
-- Redis connectivity issues
-
-## Maintenance
-
-### Regular Tasks
-- Token cleanup
-- Session management
-- Security updates
-- Provider API updates
-- Performance monitoring
-
-### Backup Procedures
-- Redis data backup
-- Configuration backup
-- User data backup
-- Audit log backup
+## Future Improvements
+- Consider implementing refresh token rotation
+- Add rate limiting for authentication attempts
+- Enhance logging for security events
+- Consider implementing additional OAuth providers

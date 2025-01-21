@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { OpenAI } from 'openai';
 import {
   LLMProvider,
   LLMRequestOptions,
@@ -57,12 +57,12 @@ export default class OpenRouterOpenAIProvider implements LLMProvider {
           role: msg.role,
           content: msg.content,
         })),
-        temperature: options?.temperature || 0.7,
+        temperature: options?.temperature || 1.0,
         max_tokens: options?.maxTokens || 4096,
-        top_p: options?.topP || 1,
-        frequency_penalty: options?.frequencyPenalty,
-        presence_penalty: options?.presencePenalty,
-        stop: options?.stop,
+        top_p: options?.topP || 1.0,
+        frequency_penalty: options?.frequencyPenalty || 0.0,
+        presence_penalty: options?.presencePenalty || 0.0,
+        stop: options?.stop || [],
         stream: false,
       });
 
@@ -118,23 +118,27 @@ export default class OpenRouterOpenAIProvider implements LLMProvider {
     startTime: number,
     model: string
   ): AsyncIterableIterator<LLMResponse> {
-    for await (const chunk of stream) {
-      if (chunk.choices[0]?.delta?.content) {
-        yield {
-          text: chunk.choices[0].delta.content,
-          usage: {
-            promptTokens: 0,
-            completionTokens: 0,
-            totalTokens: 0,
-          },
-          metadata: {
-            model: model,
-            provider: 'openrouter',
-            latency: Date.now() - startTime,
-            timestamp: new Date().toISOString(),
-          },
-        };
+    try {
+      for await (const chunk of stream) {
+        if (chunk.choices[0]?.delta?.content) {
+          yield {
+            text: chunk.choices[0].delta.content,
+            usage: {
+              promptTokens: 0,
+              completionTokens: 0,
+              totalTokens: 0,
+            },
+            metadata: {
+              model: model,
+              provider: 'openrouter',
+              latency: Date.now() - startTime,
+              timestamp: new Date().toISOString(),
+            },
+          };
+        }
       }
+    } catch (error) {
+      throw this.handleError(error);
     }
   }
 
@@ -148,7 +152,7 @@ export default class OpenRouterOpenAIProvider implements LLMProvider {
   }
 
   private handleError(error: any): LLMError {
-    if (error instanceof OpenAI.APIError) {
+    if (error?.name === 'APIError') {
       const status = error.status;
       const message = error.message;
 

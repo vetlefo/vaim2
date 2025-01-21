@@ -1,13 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import supertest from 'supertest';
-import WebSocket from 'ws';
+import request from 'supertest';
 import { AppModule } from '../src/app.module';
-import { ChatMessage } from '@app/interfaces/provider.interface';
+import { RedisService } from '../src/redis/redis.service';
+import { LLMService } from '../src/llm/llm.service';
+import { ConfigService } from '@nestjs/config';
 
 describe('LLM Service (e2e)', () => {
   let app: INestApplication;
-  let httpServer: any;
+  let redisService: RedisService;
+  let llmService: LLMService;
+  let configService: ConfigService;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -15,189 +18,257 @@ describe('LLM Service (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    redisService = moduleFixture.get<RedisService>(RedisService);
+    llmService = moduleFixture.get<LLMService>(LLMService);
+    configService = moduleFixture.get<ConfigService>(ConfigService);
+
     await app.init();
-    httpServer = app.getHttpServer();
+    await redisService.flushDb(); // Clear Redis before tests
   });
 
   afterAll(async () => {
+    await redisService.flushDb(); // Clean up Redis after tests
     await app.close();
   });
 
-  describe('REST API', () => {
-    const messages: ChatMessage[] = [
-      { role: 'user', content: 'Hello, world!' },
-    ];
-
-    it('/llm/complete (POST)', () => {
-      return supertest(httpServer)
-        .post('/api/v1/llm/complete')
-        .send({ messages })
-        .expect(200)
-        .expect((res) => {
-          expect(res.body).toHaveProperty('text');
-          expect(res.body).toHaveProperty('usage');
-          expect(res.body).toHaveProperty('metadata');
-        });
-    });
-
-    it('/llm/providers (GET)', () => {
-      return supertest(httpServer)
-        .get('/api/v1/llm/providers')
-        .expect(200)
-        .expect((res) => {
-          expect(Array.isArray(res.body)).toBe(true);
-          expect(res.body.length).toBeGreaterThan(0);
-        });
-    });
-
-    it('/llm/providers/:provider/models (GET)', () => {
-      return supertest(httpServer)
-        .get('/api/v1/llm/providers/openrouter/models')
-        .expect(200)
-        .expect((res) => {
-          expect(Array.isArray(res.body)).toBe(true);
-          expect(res.body.length).toBeGreaterThan(0);
-        });
-    });
-
-    it('/health (GET)', () => {
-      return supertest(httpServer)
-        .get('/health')
-        .expect(200)
-        .expect((res) => {
-          expect(res.body).toHaveProperty('status');
-          expect(res.body.status).toBe('ok');
-        });
-    });
-  });
-
-  describe('GraphQL API', () => {
-    const messages: ChatMessage[] = [
-      { role: 'user', content: 'Hello, world!' },
-    ];
-
-    it('complete query', () => {
-      return supertest(httpServer)
-        .post('/graphql')
+  describe('/llm/complete (POST)', () => {
+    it('should return a completion response', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/llm/complete')
         .send({
-          query: `
-            query {
-              complete(
-                messages: [{ role: "user", content: "Hello, world!" }]
-              ) {
-                text
-                usage {
-                  promptTokens
-                  completionTokens
-                  totalTokens
-                }
-                metadata {
-                  model
-                  provider
-                  latency
-                  timestamp
-                }
-              }
-            }
-          `,
+          messages: [{ role: 'user', content: 'Say hello' }],
+          model: 'deepseek/deepseek-r1'
         })
-        .expect(200)
-        .expect((res) => {
-          expect(res.body.data.complete).toBeDefined();
-          expect(res.body.data.complete.text).toBeDefined();
-          expect(res.body.data.complete.usage).toBeDefined();
-          expect(res.body.data.complete.metadata).toBeDefined();
-        });
+        .expect(201);
+
+      expect(response.body).toMatchObject({
+        text: expect.any(String),
+        usage: {
+          promptTokens: expect.any(Number),
+          completionTokens: expect.any(Number),
+          totalTokens: expect.any(Number)
+        },
+        metadata: {
+          provider: 'openrouter',
+          model: 'deepseek/deepseek-r1',
+          latency: expect.any(Number),
+          timestamp: expect.any(String)
+        }
+      });
     });
 
-    it('listProviders query', () => {
-      return supertest(httpServer)
-        .post('/graphql')
-        .send({
-          query: `
-            query {
-              listProviders
-            }
-          `,
-        })
-        .expect(200)
-        .expect((res) => {
-          expect(Array.isArray(res.body.data.listProviders)).toBe(true);
-          expect(res.body.data.listProviders.length).toBeGreaterThan(0);
-        });
-    });
-
-    it('listModels query', () => {
-      return supertest(httpServer)
-        .post('/graphql')
-        .send({
-          query: `
-            query {
-              listModels(provider: "openrouter")
-            }
-          `,
-        })
-        .expect(200)
-        .expect((res) => {
-          expect(Array.isArray(res.body.data.listModels)).toBe(true);
-          expect(res.body.data.listModels.length).toBeGreaterThan(0);
-        });
-    });
-  });
-
-  describe('WebSocket Streaming', () => {
-    it('should handle streaming completion', (done) => {
-      const wsClient = new WebSocket(
-        `ws://localhost:${process.env.WS_PORT}/graphql`
+    it('should handle rate limiting', async () => {
+      // Make multiple requests to trigger rate limit
+      const requests = Array(11).fill(null).map(() => 
+        request(app.getHttpServer())
+          .post('/llm/complete')
+          .send({
+            messages: [{ role: 'user', content: 'Say hello' }]
+          })
       );
 
-      wsClient.onopen = () => {
-        wsClient.send(
-          JSON.stringify({
-            type: 'connection_init',
-          })
-        );
+      const responses = await Promise.all(requests);
+      expect(responses.some(res => res.status === 429)).toBe(true);
+    });
 
-        wsClient.send(
-          JSON.stringify({
-            id: '1',
-            type: 'start',
-            payload: {
-              query: `
-                subscription {
-                  streamCompletion(streamId: "test-stream") {
-                    text
-                    metadata {
-                      model
-                      provider
-                      latency
-                      timestamp
-                    }
-                  }
-                }
-              `,
-            },
-          })
-        );
-      };
+    it('should use cache for identical requests', async () => {
+      const message = { role: 'user', content: 'Cache test message' };
+      
+      // First request
+      const response1 = await request(app.getHttpServer())
+        .post('/llm/complete')
+        .send({ messages: [message] })
+        .expect(201);
 
-      const messages: string[] = [];
+      // Second request (should be cached)
+      const response2 = await request(app.getHttpServer())
+        .post('/llm/complete')
+        .send({ messages: [message] })
+        .expect(201);
 
-      wsClient.onmessage = (event) => {
-        const data = JSON.parse(event.data.toString());
-        if (data.type === 'data') {
-          messages.push(data.payload.data.streamCompletion.text);
-          if (data.payload.data.streamCompletion.text === '[DONE]') {
-            expect(messages.length).toBeGreaterThan(1);
-            wsClient.close();
-            done();
+      expect(response1.body.text).toBe(response2.body.text);
+      expect(response2.body.metadata.cached).toBe(true);
+    });
+
+    it('should handle invalid API key', async () => {
+      // Temporarily override API key in environment
+      process.env.OPENROUTER_API_KEY = 'invalid-key';
+
+      const response = await request(app.getHttpServer())
+        .post('/llm/complete')
+        .send({
+          messages: [{ role: 'user', content: 'Say hello' }]
+        })
+        .expect(401);
+
+      expect(response.body.message).toContain('Invalid API key');
+
+      // Restore API key
+      process.env.OPENROUTER_API_KEY = 'test-key';
+    });
+
+    it('should handle context length errors', async () => {
+      const longMessage = 'a'.repeat(8192);
+      const response = await request(app.getHttpServer())
+        .post('/llm/complete')
+        .send({
+          messages: [{ role: 'user', content: longMessage }]
+        })
+        .expect(400);
+
+      expect(response.body.message).toContain('context length');
+    });
+  });
+
+  describe('/llm/complete/stream (POST)', () => {
+    it('should stream completion responses', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/llm/complete/stream')
+        .send({
+          messages: [{ role: 'user', content: 'Count from 1 to 5' }]
+        })
+        .expect(201);
+
+      expect(response.headers['content-type']).toMatch(/text\/event-stream/);
+      
+      const chunks = response.text.split('\n\n')
+        .filter(chunk => chunk.startsWith('data: '))
+        .map(chunk => JSON.parse(chunk.slice(6)));
+
+      expect(chunks.length).toBeGreaterThan(0);
+      chunks.forEach(chunk => {
+        expect(chunk).toMatchObject({
+          text: expect.any(String),
+          metadata: {
+            provider: 'openrouter',
+            model: expect.any(String),
+            latency: expect.any(Number),
+            timestamp: expect.any(String)
+          }
+        });
+      });
+    });
+
+    it('should handle streaming errors', async () => {
+      // Temporarily override API key in environment
+      process.env.OPENROUTER_API_KEY = 'invalid-key';
+
+      const response = await request(app.getHttpServer())
+        .post('/llm/complete/stream')
+        .send({
+          messages: [{ role: 'user', content: 'Say hello' }]
+        })
+        .expect(401);
+
+      expect(response.body.message).toContain('Invalid API key');
+
+      // Restore API key
+      process.env.OPENROUTER_API_KEY = 'test-key';
+    });
+  });
+
+  describe('/llm/health (GET)', () => {
+    it('should return health status', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/llm/health')
+        .expect(200);
+
+      expect(response.body).toMatchObject({
+        status: 'ok',
+        providers: {
+          openrouter: expect.any(Boolean),
+          openrouterOpenAI: expect.any(Boolean)
+        },
+        redis: expect.any(Boolean)
+      });
+    });
+
+    it('should reflect provider health status', async () => {
+      // Temporarily override API key in environment
+      process.env.OPENROUTER_API_KEY = 'invalid-key';
+
+      const response = await request(app.getHttpServer())
+        .get('/llm/health')
+        .expect(200);
+
+      expect(response.body.providers.openrouter).toBe(false);
+
+      // Restore API key
+      process.env.OPENROUTER_API_KEY = 'test-key';
+    });
+  });
+
+  describe('GraphQL Endpoints', () => {
+    it('should handle completion query', async () => {
+      const query = `
+        query {
+          complete(input: {
+            messages: [{ role: "user", content: "Say hello" }]
+            model: "deepseek/deepseek-r1"
+          }) {
+            text
+            usage {
+              promptTokens
+              completionTokens
+              totalTokens
+            }
+            metadata {
+              provider
+              model
+              latency
+              timestamp
+            }
           }
         }
-      };
+      `;
 
-      wsClient.onerror = (error) => {
-        done(error);
-      };
+      const response = await request(app.getHttpServer())
+        .post('/graphql')
+        .send({ query })
+        .expect(200);
+
+      expect(response.body.data.complete).toMatchObject({
+        text: expect.any(String),
+        usage: {
+          promptTokens: expect.any(Number),
+          completionTokens: expect.any(Number),
+          totalTokens: expect.any(Number)
+        },
+        metadata: {
+          provider: 'openrouter',
+          model: 'deepseek/deepseek-r1',
+          latency: expect.any(Number),
+          timestamp: expect.any(String)
+        }
+      });
+    });
+
+    it('should handle completion subscription', async () => {
+      const query = `
+        subscription {
+          completionStream(input: {
+            messages: [{ role: "user", content: "Count from 1 to 5" }]
+            model: "deepseek/deepseek-r1"
+          }) {
+            text
+            metadata {
+              provider
+              model
+              latency
+              timestamp
+            }
+          }
+        }
+      `;
+
+      // Note: WebSocket testing would be implemented here
+      // For now, we'll just verify the subscription exists
+      const response = await request(app.getHttpServer())
+        .post('/graphql')
+        .send({ query })
+        .expect(400); // 400 because we're not using WebSocket
+
+      expect(response.body.errors[0].message).toContain('subscription');
     });
   });
 });

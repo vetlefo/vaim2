@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../../users/users.service';
 import { ValidatedUser } from '../interfaces/validated-user.interface';
 import { RedisService } from '../../redis/redis.service';
+import { Request } from 'express';
 
 interface JwtPayload {
   sub: string;
@@ -32,9 +33,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(request: any, payload: JwtPayload): Promise<ValidatedUser> {
+  async validate(request: Request, payload: JwtPayload): Promise<ValidatedUser> {
     // Extract token from Authorization header
     const token = ExtractJwt.fromAuthHeaderAsBearerToken()(request);
+    if (!token) {
+      throw new UnauthorizedException('No token provided');
+    }
 
     // Check if token is blacklisted
     const isBlacklisted = await this.redisService.isTokenBlacklisted(token);

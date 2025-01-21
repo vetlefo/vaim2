@@ -980,157 +980,233 @@ Remember: These innovations should enhance, not complicate, the core authenticat
 
 // File: implementation\phase3-implementation.md
 ----------------------------------------
-# Phase 3: Graph Analytics & Data Integration Implementation Plan
+# Phase 3: Data Integration Layer Implementation
 
 ## Overview
+The data integration layer provides robust data processing, analytics, and retention capabilities for the VAIM2 platform. This phase builds upon the existing infrastructure to add automated data pipeline management, monitoring, and data lifecycle controls.
 
-Phase 3 focuses on implementing advanced graph analytics capabilities and data integration infrastructure. This phase combines graph analytics features using Neo4j Graph Data Science (GDS) with a robust data integration layer to support real-time and batch processing needs.
+## Components Implemented
 
-## Core Components
+### 1. Data Pipeline Management
+- **Pipeline Service**
+  - Automated analytics scheduling
+  - Configurable job execution
+  - Integration with monitoring systems
+  - Error handling and recovery
+- **Job Types**
+  - Daily analytics (PageRank, community detection)
+  - Weekly analytics (node similarity, graph statistics)
+  - Data retention enforcement
 
-### 1. Graph Analytics Engine
-- **Neo4j GDS Integration**
-  - Setup and configuration of Neo4j Graph Data Science library
-  - Implementation of core algorithms:
-    - PageRank for node importance
-    - Betweenness Centrality for identifying bridge concepts
-    - Community detection for topic clustering
-    - Node similarity calculations
-  
-- **Analytics Pipeline**
-  - Scheduled jobs for regular graph metrics updates
-  - Real-time analytics for immediate insights
-  - Caching layer for frequently accessed metrics
+### 2. Monitoring System
+- **Prometheus Integration**
+  - Custom metrics collection
+  - Performance monitoring
+  - Job execution tracking
+  - Data retention metrics
+- **Alerting Capabilities**
+  - Job failure notifications
+  - Performance degradation alerts
+  - Data retention warnings
 
-### 2. Data Integration Infrastructure
-- **Event Streaming**
-  - Apache Kafka implementation for real-time data flow
-  - Event schemas and topic management
-  - Producer/Consumer architecture
+### 3. Data Retention Management
+- **Retention Policies**
+  - Configurable retention periods
+  - Automated data cleanup
+  - Secure archival process
+- **Data Lifecycle**
+  - Age-based retention rules
+  - Archive management
+  - Audit logging
 
-- **Batch Processing**
-  - Apache Spark integration for large-scale data transformation
-  - ETL pipeline configuration
-  - Data quality monitoring and validation
+### 4. Security Enhancements
+- **OAuth2 Integration**
+  - Multiple provider support (Google, GitHub)
+  - Enhanced profile fetching
+  - Robust error handling
+- **Token Management**
+  - Secure token storage
+  - Refresh token rotation
+  - Token blacklisting
 
-### 3. Storage Integration
-- **Multi-Database Architecture**
-  - Neo4j as primary graph storage
-  - Integration with data warehouse (Snowflake/BigQuery)
-  - Cache layer (Redis) for performance optimization
+## Configuration
+- Environment-specific settings
+- Configurable schedules
+- Retention policy parameters
+- Monitoring thresholds
 
-## Implementation Phases
+## Documentation
+- [Data Pipeline Documentation](../services/graph-analytics-service/docs/data-pipeline.md)
+- [OAuth2 Implementation](../services/auth-service/docs/oauth2-implementation.md)
 
-### Week 1-2: Neo4j GDS Setup
-- Install and configure Neo4j GDS library
-- Set up development environment
-- Create initial graph analytics procedures
-
-### Week 3-4: Core Analytics Implementation
-- Implement basic graph algorithms
-- Create API endpoints for analytics results
-- Set up scheduled jobs for metric updates
-
-### Week 5-6: Event Streaming Setup
-- Deploy Kafka infrastructure
-- Implement event producers and consumers
-- Create data transformation pipelines
-
-### Week 7-8: Batch Processing Integration
-- Set up Spark cluster
-- Implement batch processing jobs
-- Create data quality monitoring
-
-## Technical Architecture
-
-### Graph Analytics Service
-```typescript
-// Example service structure
-@Injectable()
-export class GraphAnalyticsService {
-  constructor(
-    private readonly neo4jService: Neo4jService,
-    private readonly cacheManager: Cache
-  ) {}
-
-  async computePageRank(): Promise<PageRankResult> {
-    // Implementation
-  }
-
-  async detectCommunities(): Promise<CommunityDetectionResult> {
-    // Implementation
-  }
-
-  async findSimilarNodes(nodeId: string): Promise<SimilarityResult[]> {
-    // Implementation
-  }
-}
-```
-
-### Data Integration Service
-```typescript
-// Example service structure
-@Injectable()
-export class DataIntegrationService {
-  constructor(
-    private readonly kafkaService: KafkaService,
-    private readonly sparkService: SparkService
-  ) {}
-
-  async processStreamingEvent(event: Event): Promise<void> {
-    // Implementation
-  }
-
-  async runBatchJob(config: BatchJobConfig): Promise<BatchJobResult> {
-    // Implementation
-  }
-}
-```
-
-## Security & Monitoring
-
-### Security Measures
-- Data encryption in transit and at rest
-- Access control for analytics endpoints
-- Audit logging for all operations
-
-### Monitoring
-- Grafana dashboards for analytics metrics
-- Kafka monitoring tools
-- Spark job tracking
-
-## Testing Strategy
-
-### Unit Tests
-- Test individual analytics functions
-- Validate data transformation logic
-- Mock external service interactions
-
-### Integration Tests
-- End-to-end pipeline testing
+## Testing
+- Unit tests for new components
+- Integration tests for pipeline flows
+- Security testing for OAuth2
 - Performance testing for analytics jobs
-- Load testing for streaming components
 
-## Documentation Requirements
+## Deployment
+- Docker container updates
+- Environment configuration
+- Monitoring setup
+- Pipeline scheduling
 
-### Technical Documentation
-- API specifications
-- Configuration guides
-- Deployment procedures
+## Next Steps
+1. Integration with external data sources
+2. Enhanced analytics capabilities
+3. Machine learning pipeline integration
+4. Federated data management
 
-### User Documentation
-- Analytics interpretation guides
-- Data integration patterns
-- Troubleshooting guides
+## Technical Debt & Improvements
+- [ ] Add retry mechanisms for failed jobs
+- [ ] Implement more granular monitoring
+- [ ] Enhance archival compression
+- [ ] Add more OAuth2 providers
+
+## Security Considerations
+1. Data encryption in transit and at rest
+2. Access control for analytics jobs
+3. Secure token management
+4. Audit logging for all operations
+
+## Performance Optimizations
+1. Batch processing for large datasets
+2. Caching for frequent operations
+3. Efficient data archival process
+4. Optimized query patterns
+
+This implementation completes Phase 3 of the VAIM2 platform, providing a robust foundation for data management, security, and analytics processing. The system is now ready for the next phase of development, focusing on advanced analytics and machine learning integration.
+
+// File: implementation\phase4-implementation.md
+----------------------------------------
+# Phase 4: AI/LLM Integration Implementation
+
+## Overview
+The AI/LLM integration layer provides a unified interface for accessing various LLM providers through a single API. The implementation supports both direct provider access and OpenRouter integration for accessing multiple models through a single endpoint.
+
+## Components Implemented
+
+### 1. LLM Service Core
+- **Provider Abstraction**
+  - Provider-agnostic interface
+  - Multiple provider support
+  - Automatic fallback handling
+  - Health monitoring
+- **Model Support**
+  - DeepSeek R1 and Chat
+  - Claude 3.5 Sonnet (via OpenRouter)
+  - Other models via OpenRouter
+
+### 2. API Layer
+- **GraphQL API**
+  - Query-based completions
+  - Streaming subscriptions
+  - Model and provider listing
+  - Health checks
+- **REST API**
+  - Standard completion endpoints
+  - SSE streaming support
+  - Provider management
+  - Health monitoring
+
+### 3. Caching System
+- **Redis Integration**
+  - Response caching
+  - Rate limiting
+  - Token usage tracking
+  - Health monitoring
+
+### 4. Infrastructure
+- **Service Architecture**
+  - NestJS-based microservice
+  - GraphQL and REST support
+  - WebSocket integration
+  - Health monitoring
+- **Docker Support**
+  - Multi-stage builds
+  - Development configuration
+  - Production optimization
+
+## Configuration
+- Environment-specific settings
+- Provider API keys
+- Caching parameters
+- Rate limiting rules
+- Monitoring thresholds
+
+## API Documentation
+
+### GraphQL Endpoints
+```graphql
+type Query {
+  complete(messages: [ChatMessageInput!]!, options: CompletionOptionsInput): CompletionResponse!
+  listProviders: [String!]!
+  listModels(provider: String!): [String!]!
+}
+
+type Mutation {
+  startStreamCompletion(messages: [ChatMessageInput!]!, options: CompletionOptionsInput): Boolean!
+}
+
+type Subscription {
+  streamCompletion(streamId: String!): StreamCompletionResponse!
+}
+```
+
+### REST Endpoints
+- `POST /api/v1/llm/complete` - Text completion
+- `GET /api/v1/llm/complete/stream` - Streaming completion
+- `GET /api/v1/llm/providers` - List providers
+- `GET /api/v1/llm/providers/:provider/models` - List models
+- `GET /api/v1/health` - Health check
 
 ## Next Steps
 
-1. Begin Neo4j GDS installation and configuration
-2. Create initial graph analytics procedures
-3. Set up development environment for Kafka and Spark
-4. Implement first set of analytics endpoints
+### 1. Integration Testing
+- [ ] End-to-end provider tests
+- [ ] Streaming performance tests
+- [ ] Load testing
+- [ ] Error handling verification
 
-For detailed service implementation, refer to the [Graph Analytics Service Documentation](../services/graph-analytics-service/README.md)
+### 2. Monitoring Enhancement
+- [ ] Detailed usage metrics
+- [ ] Cost tracking
+- [ ] Performance monitoring
+- [ ] Error rate tracking
+
+### 3. Provider Expansion
+- [ ] Additional model support
+- [ ] Provider-specific optimizations
+- [ ] Custom model integration
+- [ ] Fallback strategy refinement
+
+### 4. Documentation
+- [ ] API documentation
+- [ ] Integration guides
+- [ ] Configuration reference
+- [ ] Best practices
+
+## Technical Debt & Improvements
+- [ ] Enhanced error handling
+- [ ] More granular caching
+- [ ] Better token estimation
+- [ ] Cost optimization
+- [ ] Performance tuning
+
+## Security Considerations
+1. API key management
+2. Rate limiting
+3. Input validation
+4. Output filtering
+5. Token usage monitoring
+
+## Performance Optimizations
+1. Response caching
+2. Request batching
+3. Connection pooling
+4. Resource management
+
+This implementation establishes the foundation for AI/LLM integration in the VAIM2 platform. The service provides a robust, scalable interface for accessing various LLM providers while maintaining flexibility for future expansions and optimizations.
 
 // File: implementation\roadmap.md
 ----------------------------------------
@@ -1488,7 +1564,21 @@ For detailed service implementation, refer to the [Graph Analytics Service Docum
 - **Security**
   - Data encryption in transit and at rest
   - Access control mechanisms
+    - OAuth2 integration for secure third-party authentication
+    - Role-based access control (RBAC)
+    - Fine-grained permissions for data access
   - Audit logging
+    - Authentication events
+    - Data access tracking
+    - System changes
+  - Token management
+    - JWT token lifecycle
+    - Refresh token rotation
+    - Token blacklisting
+  - Provider integration
+    - Multiple OAuth2 provider support
+    - Provider-specific security configurations
+    - User profile mapping and validation
 
 ## Key Considerations
 
@@ -1499,7 +1589,63 @@ For detailed service implementation, refer to the [Graph Analytics Service Docum
 
 // File: phases\phase4.md
 ----------------------------------------
-# Phase 4: User Interface Development
+# Phase 4: AI/LLM Integration
+
+## Architecture & Stack
+
+- **LLM Microservice**
+  - Node.js/NestJS backend
+  - Redis for caching
+  - Provider-agnostic design
+  - Rate limiting and quotas
+
+- **API Integration**
+  - GraphQL API design
+  - REST API standardization
+  - WebSocket infrastructure
+  - Real-time updates
+
+## Development & Deployment
+
+- **AI Components**
+  - Insight generation service
+  - Text summarization
+  - Query processing
+  - Concept identification
+  - Bridging suggestions
+
+- **Integration Features**
+  - Caching strategies
+  - Rate limiting
+  - Error handling
+  - Performance optimization
+
+## DevOps & Environment Setup
+
+- **Infrastructure**
+  - LLM provider configuration
+  - Redis caching layer
+  - Monitoring and logging
+  - Performance metrics
+
+- **Security**
+  - Rate limiting
+  - Input validation
+  - Output filtering
+  - Usage monitoring
+
+## Key Considerations
+
+- Provider-agnostic architecture
+- Scalable processing pipeline
+- Efficient caching strategies
+- Real-time capabilities
+- Cost optimization
+- Error handling and fallbacks
+
+// File: phases\phase5.md
+----------------------------------------
+# Phase 5: Interactive Visualization & User Interface Development
 
 ## Architecture & Stack
 
@@ -1507,21 +1653,36 @@ For detailed service implementation, refer to the [Graph Analytics Service Docum
   - React.js with TypeScript
   - State management (Redux/Recoil)
   - Component library (Material-UI/TailwindCSS)
-- **API Integration**
-  - GraphQL API consumption
-  - REST API fallback
-  - WebSocket for real-time updates
+
+- **Visualization Engine**
+  - Cytoscape.js/Sigma.js for graph visualization
+  - D3.js for data visualization
+  - WebGL rendering for large datasets
+
+- **Real-time Integration**
+  - WebSocket connections
+  - Socket.io for real-time updates
+  - State synchronization
 
 ## Development & Deployment
 
 - **UI Components**
   - Reusable component library
   - Storybook for component documentation
-  - Accessibility compliance
+  - Accessibility compliance (WCAG 2.1)
+  - Responsive design patterns
+
 - **Testing Strategy**
   - Unit tests with Jest
   - Integration tests with Cypress
   - Visual regression testing
+  - Performance benchmarking
+
+- **Collaboration Features**
+  - Multi-user editing
+  - Real-time updates
+  - Conflict resolution
+  - User presence indicators
 
 ## DevOps & Environment Setup
 
@@ -1529,61 +1690,40 @@ For detailed service implementation, refer to the [Graph Analytics Service Docum
   - Webpack configuration
   - Code splitting and lazy loading
   - CI/CD integration
+  - Environment-specific builds
+
 - **Performance Optimization**
   - Bundle size monitoring
   - Caching strategies
   - CDN integration
+  - Load time optimization
 
 ## Key Considerations
 
-- Responsive design implementation
-- Internationalization support
-- Progressive Web App capabilities
-- Browser compatibility
+- **User Experience**
+  - Responsive design implementation
+  - Internationalization support
+  - Progressive Web App capabilities
+  - Browser compatibility
+  - Mobile-first approach
 
-// File: phases\phase5.md
-----------------------------------------
-# Phase 5: Security Implementation
+- **Performance**
+  - Large graph rendering optimization
+  - Data streaming for large datasets
+  - Memory management
+  - Offline capabilities
 
-## Architecture & Stack
+- **Security**
+  - Client-side security measures
+  - Data encryption
+  - Input validation
+  - XSS prevention
 
-- **Security Components**
-  - Authentication service
-  - Authorization framework
-  - Encryption services
-- **Technology Choices**
-  - OAuth2/OpenID Connect
-  - JWT for stateless authentication
-  - Hashicorp Vault for secrets management
-
-## Development & Deployment
-
-- **Security Features**
-  - Role-based access control
-  - Data encryption at rest and in transit
-  - Security headers implementation
-- **Testing Strategy**
-  - Security vulnerability scanning
-  - Penetration testing
-  - Security code reviews
-
-## DevOps & Environment Setup
-
-- **Security Configuration**
-  - TLS/SSL certificate management
-  - Security group and firewall rules
-  - Intrusion detection systems
-- **Monitoring**
-  - Security event logging
-  - Anomaly detection
-  - Automated security audits
-
-## Key Considerations
-
-- Principle of least privilege
-- Secure coding practices
-- Regular security audits
-- Incident response planning
+- **Accessibility**
+  - Screen reader support
+  - Keyboard navigation
+  - Color contrast compliance
+  - Focus management
 
 // File: phases\phase6.md
 ----------------------------------------
@@ -2701,34 +2841,17 @@ PORT=3000
 NODE_ENV=development  # Use 'production' in production environment
 
 # JWT Configuration (Add in production)
-# JWT_SECRET=  # Store this in a secrets manager for production
-# JWT_EXPIRATION=24h
+JWT_SECRET=your-secret-key  # Store this in a secrets manager for production
+JWT_EXPIRATION=24h
+
+# Redis Configuration (Add in production)
+# Note: For production, use a secrets management service
+REDIS_HOST=redis
+REDIS_PORT=6379
+REDIS_PASSWORD=your-redis-password  # Use a strong password in production
 
 # DeepSeek AI Configuration
 # DEEPSEEK_API_KEY=  # Get key from https://platform.deepseek.com/api-keys
-
-# Database Configuration
-# Note: For production, use a secrets management service like HashiCorp Vault, AWS Secrets Manager, or GCP Secret Manager
-# These example values are for local development only
-DB_HOST=auth-postgres
-DB_PORT=5433  # Changed from 5432 to avoid conflicts
-DB_USER=admin
-DB_PASSWORD=admin  # In production, use a strong password stored in a secrets manager
-DB_NAME=auth
-
-# Neo4j Configuration
-# Note: For production, use a secrets management service
-NEO4J_URI=bolt://auth-neo4j:7688  # Changed from 7687 to avoid conflicts
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=password123  # Minimum 8 characters required, use a strong password in production
-
-# Application Configuration
-PORT=3000
-NODE_ENV=development  # Use 'production' in production environment
-
-# JWT Configuration (Add in production)
-# JWT_SECRET=  # Store this in a secrets manager for production
-# JWT_EXPIRATION=24h
 
 # SSL/TLS Configuration (Add in production)
 # SSL_KEY_PATH=/path/to/ssl/key
@@ -2737,6 +2860,23 @@ NODE_ENV=development  # Use 'production' in production environment
 # Rate Limiting (Add in production)
 # RATE_LIMIT_WINDOW=15m
 # RATE_LIMIT_MAX_REQUESTS=100
+
+# Frontend Configuration
+FRONTEND_URL=http://localhost:4200  # URL of the frontend application
+
+# OAuth2 Configuration
+OAUTH2_STATE_SECRET=your-state-secret  # Secret for OAuth2 state parameter
+OAUTH2_ENABLED_PROVIDERS=google,github  # Comma-separated list of enabled providers
+
+# Google OAuth2
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_CALLBACK_URL=http://localhost:3000/auth/oauth2/google/callback
+
+# GitHub OAuth2
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+GITHUB_CALLBACK_URL=http://localhost:3000/auth/oauth2/github/callback
 
 
 // File: services\auth-service\.env.test
@@ -2910,6 +3050,55 @@ networks:
   auth-test-network:
     driver: bridge
 
+// File: services\auth-service\docker-compose.yml
+----------------------------------------
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:alpine
+    ports:
+      - '6379:6379'
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '3000:3000'
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    depends_on:
+      - postgres
+      - redis
+
+volumes:
+  postgres_data:
+  redis_data:
+
 // File: services\auth-service\Dockerfile
 ----------------------------------------
 # Use official Node.js image
@@ -3068,39 +3257,50 @@ PORT=3002
 NODE_ENV=development
 
 # Neo4j Configuration
-NEO4J_URI=bolt://localhost:7688  # Changed port to avoid conflicts
+NEO4J_URI=bolt://localhost:7687
 NEO4J_USERNAME=neo4j
-NEO4J_PASSWORD=password123  # Minimum 8 characters required
+NEO4J_PASSWORD=password
 NEO4J_DATABASE=neo4j
 
 # Kafka Configuration
-KAFKA_BROKERS=localhost:9093  # Changed port to avoid conflicts
+KAFKA_BROKERS=localhost:9092
 KAFKA_CLIENT_ID=graph-analytics-service
 KAFKA_GROUP_ID=graph-analytics-group
 KAFKA_SSL_ENABLED=false
 
 # Redis Configuration
 REDIS_HOST=localhost
-REDIS_PORT=6380  # Changed port to avoid conflicts
+REDIS_PORT=6379
 REDIS_PASSWORD=
 REDIS_DB=0
 
 # Analytics Configuration
 ANALYTICS_BATCH_SIZE=1000
 ANALYTICS_SCHEDULE_ENABLED=true
-ANALYTICS_SCHEDULE_CRON="0 0 * * *"  # Run daily at midnight
+ANALYTICS_SCHEDULE_CRON=0 0 * * *
 
-# Security
+# Security Configuration
 JWT_SECRET=your-jwt-secret
 JWT_EXPIRATION=3600
 
-# Logging
+# Logging Configuration
 LOG_LEVEL=debug
 ENABLE_REQUEST_LOGGING=true
 
-# Monitoring
+# Monitoring Configuration
 ENABLE_METRICS=true
 METRICS_PORT=9464
+
+# Data Retention Configuration
+DATA_RETENTION_DAYS=90
+DATA_RETENTION_ARCHIVE_PATH=/data/archives
+DATA_RETENTION_SCHEDULE=0 0 3 * * * # Run at 3 AM daily
+
+# Pipeline Configuration
+PIPELINE_DAILY_ANALYTICS_ENABLED=true
+PIPELINE_WEEKLY_ANALYTICS_ENABLED=true
+PIPELINE_DAILY_ANALYTICS_TIME=0 0 0 * * * # Run at midnight
+PIPELINE_WEEKLY_ANALYTICS_TIME=0 0 0 * * 0 # Run at midnight on Sundays
 
 
 // File: services\graph-analytics-service\.env.test
@@ -3571,147 +3771,2472 @@ docker run -p 3002:3002 --env-file .env graph-analytics-service
 
 This project is proprietary and confidential.
 
+// File: services\llm-service\.env.e2e
+----------------------------------------
+# Server Configuration
+PORT=3003
+NODE_ENV=test
+API_PREFIX=api/v1
+FRONTEND_URL=http://localhost:3000
+
+# Redis Configuration
+REDIS_HOST=redis-test
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_DB=2
+REDIS_CACHE_TTL=1
+
+# Cache Configuration
+CACHE_ENABLED=false
+
+# OpenRouter Configuration (Mock values for e2e testing)
+OPENROUTER_API_KEY=test-key
+SITE_URL=http://localhost:3000
+SITE_NAME=VAIM2 E2E Test
+OPENROUTER_MAX_RETRIES=1
+OPENROUTER_TIMEOUT=1000
+
+# Provider Configuration
+DEFAULT_LLM_PROVIDER=openrouter
+DEFAULT_MODEL=deepseek/deepseek-r1
+
+# Optional Direct Provider Keys (Mock values for e2e testing)
+DEEPSEEK_API_KEY=test-key
+DEEPSEEK_MODEL=deepseek-r1
+DEEPSEEK_MAX_RETRIES=1
+DEEPSEEK_TIMEOUT=1000
+
+# Rate Limiting
+RATE_LIMIT_TTL=1
+RATE_LIMIT_MAX=1000
+
+# Performance
+MAX_CONCURRENT_REQUESTS=50
+REQUEST_TIMEOUT=1000
+BATCH_SIZE=10
+
+# Cost Management
+DAILY_COST_LIMIT=100
+ALERT_THRESHOLD=90
+
+# Monitoring
+METRICS_PORT=9466
+LOG_LEVEL=error
+LOG_FORMAT=json
+
+# WebSocket
+WS_PORT=3004
+
+# GraphQL
+GRAPHQL_PLAYGROUND=false
+GRAPHQL_DEBUG=false
+GRAPHQL_INTROSPECTION=true
+
+# Security
+JWT_SECRET=test-jwt-secret
+JWT_EXPIRATION=1m
+REFRESH_TOKEN_SECRET=test-refresh-token-secret
+REFRESH_TOKEN_EXPIRATION=5m
+
+# CORS
+CORS_ENABLED=true
+CORS_CREDENTIALS=true
+
+# Test Configuration
+TEST_TIMEOUT=30000
+RETRY_ATTEMPTS=3
+RETRY_DELAY=1000
+
+// File: services\llm-service\.env.example
+----------------------------------------
+# Server Configuration
+PORT=3002
+NODE_ENV=development
+API_PREFIX=api/v1
+
+# Redis Configuration
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_DB=0
+REDIS_CACHE_TTL=3600
+
+# GraphQL Configuration
+GRAPHQL_DEBUG=true
+GRAPHQL_PLAYGROUND=true
+GRAPHQL_INTROSPECTION=true
+
+# LLM Provider Configuration
+DEFAULT_LLM_PROVIDER=claude # claude, gpt4, deepseek, etc.
+
+# Claude Configuration
+CLAUDE_API_KEY=
+CLAUDE_MODEL=claude-3-sonnet
+CLAUDE_MAX_TOKENS=4096
+CLAUDE_TEMPERATURE=0.7
+
+# OpenAI Configuration (Fallback)
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-4
+OPENAI_MAX_TOKENS=4096
+OPENAI_TEMPERATURE=0.7
+
+# Rate Limiting
+RATE_LIMIT_TTL=60
+RATE_LIMIT_MAX=100
+
+# Security
+JWT_SECRET=your-jwt-secret
+JWT_EXPIRATION=15m
+
+# Neo4j Integration
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=
+
+# Monitoring
+PROMETHEUS_ENABLED=true
+METRICS_PORT=9464
+
+# Logging
+LOG_LEVEL=debug
+LOG_FORMAT=json
+
+# WebSocket
+WS_PORT=3003
+
+# Cache Configuration
+CACHE_ENABLED=true
+CACHE_TTL=3600
+MAX_CACHE_SIZE=1000
+
+# Cost Management
+COST_TRACKING_ENABLED=true
+DAILY_COST_LIMIT=50
+ALERT_THRESHOLD=45
+
+# Performance
+MAX_CONCURRENT_REQUESTS=50
+REQUEST_TIMEOUT=30000
+BATCH_SIZE=10
+
+// File: services\llm-service\.env.test
+----------------------------------------
+# Server Configuration
+PORT=3002
+NODE_ENV=test
+API_PREFIX=api/v1
+FRONTEND_URL=http://localhost:3000
+
+# Redis Configuration
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_DB=1
+REDIS_CACHE_TTL=60
+
+# Cache Configuration
+CACHE_ENABLED=true
+
+# OpenRouter Configuration
+OPENROUTER_API_KEY=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
+SITE_URL=http://localhost:3000
+SITE_NAME=VAIM2 Test
+OPENROUTER_MAX_RETRIES=1
+OPENROUTER_TIMEOUT=1000
+
+# Provider Configuration
+DEFAULT_LLM_PROVIDER=openrouter
+DEFAULT_MODEL=deepseek/deepseek-r1
+
+# Optional Direct Provider Keys (Mock values for testing)
+DEEPSEEK_API_KEY=test-key
+DEEPSEEK_MODEL=deepseek-r1
+DEEPSEEK_MAX_RETRIES=1
+DEEPSEEK_TIMEOUT=1000
+
+# Rate Limiting
+RATE_LIMIT_TTL=1
+RATE_LIMIT_MAX=100
+
+# Performance
+MAX_CONCURRENT_REQUESTS=10
+REQUEST_TIMEOUT=1000
+BATCH_SIZE=5
+
+# Cost Management
+DAILY_COST_LIMIT=10
+ALERT_THRESHOLD=9
+
+# Monitoring
+METRICS_PORT=9465
+LOG_LEVEL=error
+LOG_FORMAT=json
+
+# WebSocket
+WS_PORT=3004
+
+# GraphQL
+GRAPHQL_PLAYGROUND=false
+GRAPHQL_DEBUG=false
+GRAPHQL_INTROSPECTION=false
+
+# Security
+JWT_SECRET=test-jwt-secret
+JWT_EXPIRATION=1m
+REFRESH_TOKEN_SECRET=test-refresh-token-secret
+REFRESH_TOKEN_EXPIRATION=5m
+
+# CORS
+CORS_ENABLED=true
+CORS_CREDENTIALS=true
+
+// File: services\llm-service\docker-compose.test.yml
+----------------------------------------
+version: '3.8'
+
+services:
+  llm-service-test:
+    build:
+      context: .
+      target: builder
+    container_name: llm-service-test
+    command: npm run test
+    environment:
+      - NODE_ENV=test
+      - REDIS_HOST=redis-test
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - REDIS_DB=1
+      - OPENROUTER_API_KEY=test-key
+      - SITE_URL=http://localhost:3000
+      - SITE_NAME=VAIM2 Test
+      - OPENROUTER_BASE_URL=http://mock-openrouter:3000/api/v1
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      redis-test:
+        condition: service_healthy
+      mock-openrouter:
+        condition: service_started
+    networks:
+      - llm-test-network
+
+  llm-service-e2e:
+    build:
+      context: .
+      target: builder
+    container_name: llm-service-e2e
+    command: npm run test:e2e
+    environment:
+      - NODE_ENV=test
+      - REDIS_HOST=redis-test
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - REDIS_DB=2
+      - OPENROUTER_API_KEY=test-key
+      - SITE_URL=http://localhost:3000
+      - SITE_NAME=VAIM2 E2E
+      - OPENROUTER_BASE_URL=http://mock-openrouter:3000/api/v1
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      redis-test:
+        condition: service_healthy
+      mock-openrouter:
+        condition: service_started
+    networks:
+      - llm-test-network
+
+  mock-openrouter:
+    build:
+      context: ./test/mock-openrouter
+    container_name: mock-openrouter
+    ports:
+      - "3001:3000"
+    networks:
+      - llm-test-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/v1/models"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+  redis-test:
+    image: redis:7-alpine
+    container_name: llm-redis-test
+    command: redis-server --appendonly no --save ""
+    ports:
+      - "6380:6379"
+    networks:
+      - llm-test-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+networks:
+  llm-test-network:
+    driver: bridge
+
+// File: services\llm-service\docker-compose.yml
+----------------------------------------
+version: '3.8'
+
+services:
+  llm-service:
+    build:
+      context: .
+      target: development
+    container_name: llm-service
+    ports:
+      - "3002:3002"  # API
+      - "9464:9464"  # Metrics
+      - "3003:3003"  # WebSocket
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - REDIS_DB=0
+    depends_on:
+      - redis
+    networks:
+      - llm-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: llm-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - llm-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: llm-redis-commander
+    ports:
+      - "8081:8081"
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    depends_on:
+      - redis
+    networks:
+      - llm-network
+
+networks:
+  llm-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+    driver: local
+
+// File: services\llm-service\Dockerfile
+----------------------------------------
+# Build stage
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Build application
+RUN npm run build
+
+# Production stage
+FROM node:18-alpine AS production
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install production dependencies only
+RUN npm ci --only=production
+
+# Copy built application from builder stage
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+
+# Copy necessary files
+COPY .env.example .env
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nestjs -u 1001
+
+# Set ownership
+RUN chown -R nestjs:nodejs /app
+
+# Switch to non-root user
+USER nestjs
+
+# Expose ports
+EXPOSE 3002
+EXPOSE 9464
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=30s \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3002/health || exit 1
+
+# Start application
+CMD ["node", "dist/main"]
+
+// File: services\llm-service\env.example
+----------------------------------------
+# Server Configuration
+PORT=3002
+NODE_ENV=development
+API_PREFIX=api/v1
+FRONTEND_URL=http://localhost:3000
+
+# Redis Configuration
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_DB=0
+REDIS_CACHE_TTL=3600
+
+# Cache Configuration
+CACHE_ENABLED=true
+
+# OpenRouter Configuration
+OPENROUTER_API_KEY=your-openrouter-api-key
+SITE_URL=http://localhost:3000
+SITE_NAME=VAIM2 Platform
+OPENROUTER_MAX_RETRIES=3
+OPENROUTER_TIMEOUT=30000
+
+# Provider Configuration
+DEFAULT_LLM_PROVIDER=openrouter
+DEFAULT_MODEL=deepseek/deepseek-r1
+
+# Optional Direct Provider Keys
+DEEPSEEK_API_KEY=
+DEEPSEEK_MODEL=deepseek-r1
+DEEPSEEK_MAX_RETRIES=3
+DEEPSEEK_TIMEOUT=30000
+
+# Rate Limiting
+RATE_LIMIT_TTL=60
+RATE_LIMIT_MAX=100
+
+# Performance
+MAX_CONCURRENT_REQUESTS=50
+REQUEST_TIMEOUT=30000
+BATCH_SIZE=10
+
+# Cost Management
+DAILY_COST_LIMIT=50
+ALERT_THRESHOLD=45
+
+# Monitoring
+METRICS_PORT=9464
+LOG_LEVEL=debug
+LOG_FORMAT=json
+
+# WebSocket
+WS_PORT=3003
+
+# GraphQL
+GRAPHQL_PLAYGROUND=true
+GRAPHQL_DEBUG=true
+GRAPHQL_INTROSPECTION=true
+
+# Security
+JWT_SECRET=your-jwt-secret
+JWT_EXPIRATION=15m
+REFRESH_TOKEN_SECRET=your-refresh-token-secret
+REFRESH_TOKEN_EXPIRATION=7d
+
+# CORS
+CORS_ENABLED=true
+CORS_CREDENTIALS=true
+
+# Documentation
+API_TITLE=VAIM2 LLM Service
+API_DESCRIPTION=LLM integration service for the VAIM2 platform
+API_VERSION=1.0.0
+API_PATH=/api/docs
+
+// File: services\llm-service\README.md
+----------------------------------------
+# LLM Service
+
+The LLM (Large Language Model) service provides a unified interface for accessing various LLM providers through both GraphQL and REST APIs. It supports multiple providers including OpenRouter for accessing a wide range of models, and direct provider integrations for specific use cases.
+
+## Features
+
+- Multiple LLM provider support
+- GraphQL and REST APIs
+- Real-time streaming responses
+- Response caching
+- Rate limiting
+- Health monitoring
+- Provider fallback
+- Cost tracking
+
+## Prerequisites
+
+- Node.js 18+
+- Redis 6+
+- OpenRouter API key
+- (Optional) Direct provider API keys
+
+## Installation
+
+```bash
+# Install dependencies
+npm install
+
+# Copy environment file
+cp .env.example .env
+
+# Update environment variables
+# Edit .env with your configuration
+```
+
+## Configuration
+
+### Environment Variables
+
+```env
+# Server Configuration
+PORT=3002
+NODE_ENV=development
+API_PREFIX=api/v1
+
+# Redis Configuration
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_DB=0
+REDIS_CACHE_TTL=3600
+
+# OpenRouter Configuration
+OPENROUTER_API_KEY=your-api-key
+SITE_URL=your-site-url
+SITE_NAME=your-site-name
+
+# Provider Configuration
+DEFAULT_LLM_PROVIDER=openrouter
+DEFAULT_MODEL=deepseek/deepseek-r1
+
+# Optional Direct Provider Keys
+DEEPSEEK_API_KEY=
+CLAUDE_API_KEY=
+
+# Performance
+MAX_CONCURRENT_REQUESTS=50
+REQUEST_TIMEOUT=30000
+BATCH_SIZE=10
+```
+
+## Usage
+
+### Starting the Service
+
+```bash
+# Development
+npm run start:dev
+
+# Production
+npm run build
+npm run start:prod
+```
+
+### API Examples
+
+#### GraphQL
+
+```graphql
+# Text Completion
+query {
+  complete(
+    messages: [
+      { role: "user", content: "What is the meaning of life?" }
+    ],
+    options: {
+      model: "deepseek/deepseek-r1",
+      temperature: 0.7
+    }
+  ) {
+    text
+    usage {
+      promptTokens
+      completionTokens
+      totalTokens
+    }
+    metadata {
+      model
+      provider
+      latency
+      timestamp
+    }
+  }
+}
+
+# Streaming Completion
+subscription {
+  streamCompletion(streamId: "unique-id") {
+    text
+    metadata {
+      model
+      provider
+      latency
+      timestamp
+    }
+  }
+}
+```
+
+#### REST
+
+```bash
+# Text Completion
+curl -X POST http://localhost:3002/api/v1/llm/complete \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [
+      { "role": "user", "content": "What is the meaning of life?" }
+    ],
+    "options": {
+      "model": "deepseek/deepseek-r1",
+      "temperature": 0.7
+    }
+  }'
+
+# Streaming Completion
+curl -N http://localhost:3002/api/v1/llm/complete/stream \
+  -H "Accept: text/event-stream" \
+  -G \
+  --data-urlencode 'messages=[{"role":"user","content":"What is the meaning of life?"}]'
+```
+
+## Development
+
+### Running Tests
+
+```bash
+# Unit tests
+npm run test
+
+# E2E tests
+npm run test:e2e
+
+# Test coverage
+npm run test:cov
+```
+
+### Docker
+
+```bash
+# Build image
+docker build -t llm-service .
+
+# Run container
+docker run -p 3002:3002 llm-service
+```
+
+### Docker Compose
+
+```bash
+# Start services
+docker-compose up -d
+
+# Stop services
+docker-compose down
+```
+
+## Health Checks
+
+The service provides health check endpoints:
+
+- `/health` - Overall service health
+- `/health/live` - Liveness check
+- `/health/ready` - Readiness check
+
+## Monitoring
+
+The service exposes metrics for Prometheus:
+
+- Request counts and latencies
+- Cache hit rates
+- Token usage
+- Provider availability
+- Error rates
+
+## Documentation
+
+- [Architecture](docs/architecture.md)
+- [API Documentation](docs/api.md)
+- [Provider Integration](docs/providers.md)
+- [Configuration Guide](docs/configuration.md)
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a new Pull Request
+
+## License
+
+This project is proprietary and confidential.
+
 // File: services\auth-service\docs\implementation.md
 ----------------------------------------
-# Authentication Service Implementation Plan
+# Auth Service Implementation
 
 ## Overview
-This document outlines the step-by-step implementation plan for the authentication service, focusing on OAuth2 and JWT token handling.
+The authentication service provides secure user authentication and authorization through multiple methods:
+- Local authentication (username/password)
+- OAuth2 authentication (Google, GitHub)
+- JWT-based token management
+- Secure refresh token rotation
+
+## Components
+
+### Core Authentication
+- JWT-based token generation and validation
+- Secure password hashing with bcrypt
+- Redis-based token blacklisting
+- Refresh token rotation for enhanced security
+
+### OAuth2 Integration
+- Multi-provider support (Google, GitHub)
+- Provider-specific strategies with profile mapping
+- Secure state parameter validation
+- PKCE support for enhanced security
+- Token storage and management in Redis
+- Automatic user creation/linking for OAuth2 users
+
+### Security Features
+- Role-based access control (RBAC)
+- Token blacklisting for secure logout
+- Refresh token rotation
+- Rate limiting
+- CSRF protection
+- Secure session management
+
+## Configuration
+
+### Environment Variables
+```bash
+# JWT Configuration
+JWT_SECRET=your-secret-key
+JWT_EXPIRATION=15m
+REFRESH_TOKEN_EXPIRATION=7d
+
+# Redis Configuration
+REDIS_HOST=redis
+REDIS_PORT=6379
+REDIS_PASSWORD=your-redis-password
+
+# Frontend Configuration
+FRONTEND_URL=http://localhost:4200
+
+# OAuth2 Configuration
+OAUTH2_STATE_SECRET=your-state-secret
+OAUTH2_ENABLED_PROVIDERS=google,github
+
+# Google OAuth2
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_CALLBACK_URL=http://localhost:3000/auth/oauth2/google/callback
+
+# GitHub OAuth2
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+GITHUB_CALLBACK_URL=http://localhost:3000/auth/oauth2/github/callback
+```
+
+## API Endpoints
+
+### Local Authentication
+- `POST /auth/login` - Login with email/password
+- `POST /auth/refresh` - Refresh access token
+- `POST /auth/logout` - Logout and invalidate tokens
+
+### OAuth2 Authentication
+- `GET /auth/oauth2/:provider` - Initiate OAuth2 flow
+- `GET /auth/oauth2/:provider/callback` - Handle OAuth2 callback
+
+## Token Management
+
+### Access Tokens
+- Short-lived JWT tokens (15 minutes)
+- Contains user ID, email, and roles
+- Used for API authentication
+
+### Refresh Tokens
+- Long-lived tokens (7 days)
+- Stored in Redis with user association
+- One-time use with automatic rotation
+- Can be revoked server-side
+
+## Security Considerations
+
+### OAuth2 Security
+- State parameter validation
+- PKCE implementation
+- Secure token storage
+- Provider-specific security measures
+- Automatic user linking
+- Profile data validation
+
+### General Security
+- Password hashing with bcrypt
+- Token encryption
+- HTTPS-only cookies
+- CSRF protection
+- Rate limiting
+- Input validation
+- Secure headers
+
+## Testing
+
+### Unit Tests
+- Authentication flows
+- Token management
+- Password hashing
+- Input validation
+
+### Integration Tests
+- OAuth2 provider integration
+- Token refresh flow
+- User management
+- Error handling
+
+### E2E Tests
+- Complete authentication flows
+- OAuth2 provider flows
+- Error scenarios
+- Security measures
+
+## Monitoring
+
+### Metrics
+- Authentication success/failure rates
+- Token refresh rates
+- OAuth2 provider usage
+- Error rates by type
+- Response times
+
+### Alerts
+- High failure rates
+- Unusual traffic patterns
+- Token validation failures
+- Redis connectivity issues
+
+## Maintenance
+
+### Regular Tasks
+- Token cleanup
+- Session management
+- Security updates
+- Provider API updates
+- Performance monitoring
+
+### Backup Procedures
+- Redis data backup
+- Configuration backup
+- User data backup
+- Audit log backup
+
+// File: services\auth-service\docs\oauth2-implementation.md
+----------------------------------------
+# OAuth2 Implementation Guide
+
+## Overview
+This document details the OAuth2 integration plan for the authentication service, outlining the implementation steps, configuration requirements, and security considerations.
+
+## Implementation Steps
+
+### 1. Provider Configuration
+- Configure multiple OAuth2 providers (e.g., Google, GitHub, Microsoft)
+- Set up provider-specific client credentials
+- Define callback URLs for each provider
+- Implement provider-specific user profile mapping
+
+### 2. OAuth2 Strategy Implementation
+```typescript
+// Example OAuth2 Strategy Structure
+@Injectable()
+export class OAuth2Strategy extends PassportStrategy(Strategy, 'oauth2') {
+  constructor(
+    private configService: ConfigService,
+    private authService: AuthService,
+  ) {
+    super({
+      authorizationURL: 'provider-specific-url',
+      tokenURL: 'provider-specific-token-url',
+      clientID: configService.get('OAUTH2_CLIENT_ID'),
+      clientSecret: configService.get('OAUTH2_CLIENT_SECRET'),
+      callbackURL: configService.get('OAUTH2_CALLBACK_URL'),
+      scope: ['required-scopes'],
+    });
+  }
+
+  async validate(accessToken: string, refreshToken: string, profile: any) {
+    // Map provider profile to our user model
+    // Create or update user
+    // Return user entity
+  }
+}
+```
+
+### 3. Controller Endpoints
+```typescript
+// Required endpoints
+@Controller('auth/oauth2')
+export class OAuth2Controller {
+  @Get(':provider')
+  @UseGuards(OAuth2AuthGuard)
+  async auth(@Param('provider') provider: string) {
+    // Initiate OAuth2 flow
+  }
+
+  @Get(':provider/callback')
+  @UseGuards(OAuth2AuthGuard)
+  async callback(@Param('provider') provider: string) {
+    // Handle OAuth2 callback
+    // Generate JWT tokens
+    // Return tokens to client
+  }
+}
+```
+
+### 4. User Profile Mapping
+- Define provider-specific profile interfaces
+- Implement profile mapping logic
+- Handle user creation/linking
+- Manage provider-specific user metadata
+
+## Security Considerations
+
+### Token Security
+- Secure storage of provider tokens
+- Token encryption at rest
+- Refresh token rotation
+- Token scope limitations
+
+### Provider-Specific Security
+- Validate state parameter
+- Implement PKCE (Proof Key for Code Exchange)
+- Verify token signatures
+- Handle provider-specific security requirements
+
+### Error Handling
+- Invalid state parameter
+- Token validation failures
+- Provider API errors
+- User cancellation handling
+
+## Configuration Requirements
+
+### Environment Variables
+```bash
+# General OAuth2 Configuration
+OAUTH2_ENABLED_PROVIDERS=google,github
+OAUTH2_STATE_SECRET=your-state-secret
+
+# Google OAuth2
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_CALLBACK_URL=http://localhost:3000/auth/oauth2/google/callback
+
+# GitHub OAuth2
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+GITHUB_CALLBACK_URL=http://localhost:3000/auth/oauth2/github/callback
+```
+
+### Required Dependencies
+```json
+{
+  "dependencies": {
+    "passport-google-oauth20": "^2.0.0",
+    "passport-github2": "^0.1.12",
+    "passport-oauth2": "^1.7.0"
+  }
+}
+```
+
+## Testing Strategy
+
+### Unit Tests
+- Test provider strategy validation
+- Test profile mapping logic
+- Test token generation/validation
+
+### Integration Tests
+- Test OAuth2 flow initiation
+- Test callback handling
+- Test user creation/linking
+- Test error scenarios
+
+### E2E Tests
+- Complete OAuth2 flow testing
+- Multiple provider testing
+- Error handling scenarios
+- Token management verification
+
+## Implementation Timeline
+
+1. **Week 1: Basic Setup**
+   - Install required dependencies
+   - Configure environment variables
+   - Set up basic strategy structure
+
+2. **Week 2: Provider Integration**
+   - Implement Google OAuth2
+   - Implement GitHub OAuth2
+   - Test basic flows
+
+3. **Week 3: User Management**
+   - Implement profile mapping
+   - Handle user creation/linking
+   - Add provider-specific metadata
+
+4. **Week 4: Testing & Security**
+   - Implement security measures
+   - Write comprehensive tests
+   - Document API endpoints
+
+## Monitoring & Maintenance
+
+### Metrics to Track
+- OAuth2 flow success rate
+- Provider-specific error rates
+- Token refresh success rate
+- User linking statistics
+
+### Maintenance Tasks
+- Regular token cleanup
+- Provider API version monitoring
+- Security update management
+- Configuration review
+
+## API Documentation
+
+### OAuth2 Flow Endpoints
+
+#### Initiate OAuth2 Flow
+```
+GET /auth/oauth2/:provider
+```
+- Initiates the OAuth2 authentication flow
+- Redirects to provider login page
+- Supports multiple providers via path parameter
+
+#### OAuth2 Callback
+```
+GET /auth/oauth2/:provider/callback
+```
+- Handles provider callback
+- Validates state and tokens
+- Returns JWT access/refresh tokens
+
+## Error Handling
+
+### Common Error Scenarios
+1. Invalid state parameter
+2. Token validation failure
+3. User cancellation
+4. Provider API errors
+5. Profile mapping errors
+
+### Error Responses
+```typescript
+{
+  statusCode: number;
+  message: string;
+  error: string;
+  details?: any;
+}
+
+// File: services\graph-analytics-service\docs\data-pipeline.md
+----------------------------------------
+# Data Pipeline Implementation
+
+## Overview
+The data pipeline implementation provides automated analytics processing, data retention management, and monitoring capabilities for the graph analytics service.
+
+## Components
+
+### Pipeline Service
+- Manages scheduled analytics jobs
+- Handles data retention policies
+- Integrates with monitoring system
+- Configurable through environment variables
+
+### Monitoring Service
+- Prometheus metrics integration
+- Tracks job durations and failures
+- Monitors data retention operations
+- Exposes metrics endpoint for collection
+
+### Data Retention
+- Configurable retention period (default: 90 days)
+- Automated cleanup of old data
+- Data archival capabilities
+- Transaction-safe deletion process
+
+## Configuration
+
+### Environment Variables
+
+```env
+# Monitoring Configuration
+ENABLE_METRICS=true
+METRICS_PORT=9464
+
+# Data Retention Configuration
+DATA_RETENTION_DAYS=90
+DATA_RETENTION_ARCHIVE_PATH=/data/archives
+DATA_RETENTION_SCHEDULE=0 0 3 * * * # Run at 3 AM daily
+
+# Pipeline Configuration
+PIPELINE_DAILY_ANALYTICS_ENABLED=true
+PIPELINE_WEEKLY_ANALYTICS_ENABLED=true
+PIPELINE_DAILY_ANALYTICS_TIME=0 0 0 * * * # Run at midnight
+PIPELINE_WEEKLY_ANALYTICS_TIME=0 0 0 * * 0 # Run at midnight on Sundays
+```
+
+## Scheduled Jobs
+
+### Daily Analytics
+- PageRank computation
+- Community detection
+- Data retention enforcement
+- Runs at configured time (default: midnight)
+
+### Weekly Analytics
+- Node similarity analysis
+- Graph statistics computation
+- Runs at configured time (default: midnight on Sundays)
+
+## Monitoring Metrics
+
+### Job Metrics
+- `graph_analytics_job_duration_seconds`: Histogram of analytics job duration
+- `graph_analytics_job_failures_total`: Counter of failed analytics jobs
+
+### Data Retention Metrics
+- `graph_data_retention_deletions_total`: Counter of deleted nodes/relationships
+
+## Error Handling
+- Failed jobs are logged and tracked in Prometheus
+- Automatic retry mechanism for failed operations
+- Alert configuration available through Prometheus
+
+## Best Practices
+1. Monitor the metrics endpoint for job performance
+2. Adjust retention period based on data growth
+3. Configure archive path with sufficient storage
+4. Review job schedules to minimize impact on system performance
+
+## Security Considerations
+- Metrics endpoint requires authentication
+- Archived data is encrypted
+- Access to retention operations is restricted
+- Audit logging of all retention activities
+
+// File: services\llm-service\docs\api.md
+----------------------------------------
+# LLM Service API Documentation
+
+## Overview
+
+The LLM Service provides a unified interface for interacting with various language model providers, with OpenRouter as the primary integration. The service supports both REST and GraphQL endpoints, with features including streaming responses, caching, and comprehensive error handling.
+
+## REST Endpoints
+
+### POST /llm/complete
+
+Generates a completion for the given messages.
+
+#### Request
+
+```json
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Your message here"
+    }
+  ],
+  "model": "deepseek/deepseek-r1", // Optional, defaults to configured default model
+  "temperature": 0.7, // Optional, defaults to 0.7
+  "maxTokens": 4096, // Optional, defaults to 4096
+  "topP": 1.0, // Optional, defaults to 1.0
+  "frequencyPenalty": 0.0, // Optional
+  "presencePenalty": 0.0, // Optional
+  "stop": [] // Optional, array of stop sequences
+}
+```
+
+#### Response
+
+```json
+{
+  "text": "Generated response text",
+  "usage": {
+    "promptTokens": 10,
+    "completionTokens": 20,
+    "totalTokens": 30
+  },
+  "metadata": {
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-r1",
+    "latency": 1234,
+    "timestamp": "2025-01-21T18:30:00.000Z",
+    "cached": false
+  }
+}
+```
+
+### POST /llm/complete/stream
+
+Streams the completion response as it's generated.
+
+#### Request
+Same as /llm/complete
+
+#### Response
+Server-Sent Events stream with the following event format:
+
+```json
+{
+  "text": "Partial response text",
+  "metadata": {
+    "provider": "openrouter",
+    "model": "deepseek/deepseek-r1",
+    "latency": 1234,
+    "timestamp": "2025-01-21T18:30:00.000Z"
+  }
+}
+```
+
+### GET /llm/health
+
+Returns the health status of the service and its dependencies.
+
+#### Response
+
+```json
+{
+  "status": "ok",
+  "providers": {
+    "openrouter": true,
+    "openrouterOpenAI": true
+  },
+  "redis": true
+}
+```
+
+## GraphQL API
+
+### Queries
+
+#### complete
+
+```graphql
+query {
+  complete(input: {
+    messages: [{ role: String!, content: String! }!]!
+    model: String
+    temperature: Float
+    maxTokens: Int
+    topP: Float
+    frequencyPenalty: Float
+    presencePenalty: Float
+    stop: [String!]
+  }) {
+    text
+    usage {
+      promptTokens
+      completionTokens
+      totalTokens
+    }
+    metadata {
+      provider
+      model
+      latency
+      timestamp
+      cached
+    }
+  }
+}
+```
+
+### Subscriptions
+
+#### completionStream
+
+```graphql
+subscription {
+  completionStream(input: {
+    messages: [{ role: String!, content: String! }!]!
+    model: String
+    temperature: Float
+    maxTokens: Int
+    topP: Float
+    frequencyPenalty: Float
+    presencePenalty: Float
+    stop: [String!]
+  }) {
+    text
+    metadata {
+      provider
+      model
+      latency
+      timestamp
+    }
+  }
+}
+```
+
+## Error Handling
+
+The service returns standardized error responses with the following structure:
+
+```json
+{
+  "statusCode": 400,
+  "message": "Error message",
+  "error": "Error type"
+}
+```
+
+### Error Types
+
+- `PROVIDER_ERROR`: Issues with the LLM provider (e.g., invalid API key)
+- `RATE_LIMIT`: Rate limit exceeded
+- `CONTEXT_LENGTH`: Input exceeds model's maximum context length
+- `TIMEOUT`: Request timed out
+- `MODEL_NOT_FOUND`: Requested model not available
+- `INVALID_REQUEST`: Invalid request parameters
+- `UNKNOWN`: Unexpected errors
+
+### HTTP Status Codes
+
+- 200: Successful request
+- 201: Successful creation/completion
+- 400: Invalid request
+- 401: Authentication error
+- 429: Rate limit exceeded
+- 500: Server error
+
+## Caching
+
+The service implements Redis-based caching for completion requests:
+
+- Cache key: Generated from the request parameters (messages, model, temperature, etc.)
+- TTL: Configurable via REDIS_CACHE_TTL environment variable
+- Cache bypass: Set CACHE_ENABLED=false in environment variables
+
+Cached responses include `metadata.cached: true` to indicate a cache hit.
+
+// File: services\llm-service\docs\architecture.md
+----------------------------------------
+# LLM Service Architecture
+
+## Overview
+
+The LLM Service is designed with a modular architecture that separates concerns and enables easy extension with new providers. The service integrates with OpenRouter as the primary LLM provider, with support for both direct API calls and OpenAI SDK integration.
+
+## Core Components
+
+```mermaid
+graph TD
+    A[API Layer] --> B[LLM Service]
+    B --> C[Provider Factory]
+    C --> D[OpenRouter Provider]
+    C --> E[OpenRouter OpenAI Provider]
+    B --> F[Redis Cache]
+    A --> G[GraphQL Resolvers]
+    G --> B
+```
+
+### API Layer
+- REST endpoints for completions and health checks
+- GraphQL resolvers for queries and subscriptions
+- Request validation and error handling
+- Response formatting
+
+### LLM Service
+- Core business logic
+- Provider selection and management
+- Caching strategy
+- Error handling and retries
+- Request/response transformation
+
+### Provider Factory
+- Provider instantiation and configuration
+- Provider health checks
+- Model mapping and validation
+- Fallback handling
+
+### Redis Cache
+- Response caching
+- Cache invalidation
+- TTL management
+- Health monitoring
+
+## Test Infrastructure
+
+```mermaid
+graph TD
+    A[Test Runner] --> B[Unit Tests]
+    A --> C[Integration Tests]
+    A --> D[E2E Tests]
+    C --> E[Mock OpenRouter API]
+    C --> F[Redis Test Instance]
+    D --> E
+    D --> F
+    E --> G[Rate Limiter]
+    E --> H[Error Simulator]
+    E --> I[Stream Handler]
+```
+
+### Mock OpenRouter API
+- Simulates OpenRouter API responses
+- Implements rate limiting
+- Handles streaming responses
+- Simulates various error conditions
+- Configurable latency and timeouts
+
+### Test Containers
+- Redis test instance
+- Mock OpenRouter API service
+- Isolated test network
+- Health checks and readiness probes
+
+### Test Coverage
+- Unit tests: Provider implementations, service logic
+- Integration tests: Redis caching, provider integration
+- E2E tests: API endpoints, GraphQL resolvers
+
+## Data Flow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant Cache
+    participant Service
+    participant Provider
+    
+    Client->>API: Request completion
+    API->>Cache: Check cache
+    alt Cache hit
+        Cache-->>API: Return cached response
+        API-->>Client: Return response
+    else Cache miss
+        Cache-->>Service: No cache entry
+        Service->>Provider: Request completion
+        Provider-->>Service: Return completion
+        Service->>Cache: Store response
+        Service-->>API: Return response
+        API-->>Client: Return response
+    end
+```
+
+## Error Handling
+
+```mermaid
+graph TD
+    A[Error Occurs] --> B{Error Type}
+    B -->|Provider Error| C[Retry with Backoff]
+    B -->|Rate Limit| D[Queue Request]
+    B -->|Context Length| E[Return Error]
+    B -->|Timeout| F[Retry with Timeout]
+    C --> G{Max Retries?}
+    G -->|Yes| H[Return Error]
+    G -->|No| I[Retry Request]
+```
+
+### Error Types
+- Provider errors: Authentication, availability
+- Rate limiting: Per-provider and global limits
+- Context length: Model-specific limits
+- Timeouts: Network and provider timeouts
+- Validation: Request parameter validation
+
+## Caching Strategy
+
+```mermaid
+graph TD
+    A[Request] --> B{Cache Enabled?}
+    B -->|Yes| C{Cache Entry Exists?}
+    B -->|No| D[Forward Request]
+    C -->|Yes| E[Return Cached]
+    C -->|No| F[Forward Request]
+    F --> G[Cache Response]
+    G --> H[Return Response]
+```
+
+### Cache Implementation
+- Redis as primary cache store
+- Configurable TTL per response
+- Cache key generation based on request parameters
+- Cache invalidation on error
+- Cache bypass for streaming requests
+
+## Provider Implementation
+
+```mermaid
+graph TD
+    A[Provider Factory] --> B[Base Provider Interface]
+    B --> C[OpenRouter Direct]
+    B --> D[OpenRouter OpenAI]
+    C --> E[Axios Client]
+    D --> F[OpenAI SDK]
+    E --> G[Error Handling]
+    F --> G
+    G --> H[Response Mapping]
+```
+
+### Provider Interface
+- Standard methods for all providers
+- Error handling and retries
+- Response transformation
+- Health checks
+- Configuration validation
+
+## Testing Architecture
+
+```mermaid
+graph TD
+    A[Test Suite] --> B[Unit Tests]
+    A --> C[Integration Tests]
+    A --> D[E2E Tests]
+    B --> E[Jest]
+    C --> F[Docker Compose]
+    D --> F
+    F --> G[Mock API]
+    F --> H[Redis]
+    G --> I[Rate Limiter]
+    G --> J[Error Simulator]
+```
+
+### Test Components
+- Mock OpenRouter API for integration testing
+- Redis instance for cache testing
+- Docker Compose for test environment
+- Jest for test execution
+- Supertest for HTTP testing
+
+## Monitoring and Health Checks
+
+```mermaid
+graph TD
+    A[Health Check] --> B[Provider Status]
+    A --> C[Redis Status]
+    A --> D[API Status]
+    B --> E[Aggregate Status]
+    C --> E
+    D --> E
+    E --> F[Health Endpoint]
+```
+
+### Health Monitoring
+- Provider availability checks
+- Redis connection status
+- API endpoint health
+- Response time monitoring
+- Error rate tracking
+
+// File: services\llm-service\docs\configuration.md
+----------------------------------------
+# LLM Service Configuration Guide
+
+## Environment Variables
+
+### Core Configuration
+```env
+NODE_ENV=development|test|production
+PORT=3000
+```
+
+### OpenRouter Configuration
+```env
+OPENROUTER_API_KEY=your-api-key
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+SITE_URL=http://your-site.com
+SITE_NAME=Your Site Name
+DEFAULT_MODEL=deepseek/deepseek-r1
+```
+
+### Redis Configuration
+```env
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+REDIS_DB=0
+REDIS_CACHE_TTL=3600
+CACHE_ENABLED=true
+```
+
+### Provider Settings
+```env
+DEFAULT_LLM_PROVIDER=openrouter
+MAX_RETRIES=3
+REQUEST_TIMEOUT=30000
+```
+
+## Test Environment Configuration
+
+### Docker Compose Test Setup
+
+The test environment uses Docker Compose to run integration tests with mock services:
+
+```yaml
+services:
+  # Test service container
+  llm-service-test:
+    build:
+      context: .
+      target: builder
+    environment:
+      - NODE_ENV=test
+      - REDIS_HOST=redis-test
+      - OPENROUTER_BASE_URL=http://mock-openrouter:3000/api/v1
+      - OPENROUTER_API_KEY=test-key
+
+  # Mock OpenRouter API
+  mock-openrouter:
+    build:
+      context: ./test/mock-openrouter
+    ports:
+      - "3001:3000"
+
+  # Redis test instance
+  redis-test:
+    image: redis:7-alpine
+    command: redis-server --appendonly no --save ""
+```
+
+### Mock OpenRouter API
+
+The test environment includes a mock OpenRouter API that simulates:
+- Success responses
+- Rate limiting (10 requests per minute)
+- Context length errors (>8192 tokens)
+- Timeouts
+- Authentication errors
+- Streaming responses
+
+### Test Environment Variables (.env.test)
+```env
+NODE_ENV=test
+REDIS_HOST=redis-test
+REDIS_PORT=6379
+REDIS_DB=1
+OPENROUTER_API_KEY=test-key
+SITE_URL=http://localhost:3000
+SITE_NAME=VAIM2 Test
+OPENROUTER_BASE_URL=http://mock-openrouter:3000/api/v1
+```
+
+## Provider Configuration
+
+### OpenRouter Direct Provider
+
+The OpenRouter direct provider uses axios to communicate with the OpenRouter API:
+
+```typescript
+{
+  apiKey: string;
+  defaultModel?: string;
+  baseUrl?: string;
+  siteUrl?: string;
+  siteName?: string;
+  maxRetries?: number;
+  timeout?: number;
+}
+```
+
+### OpenRouter OpenAI Provider
+
+The OpenRouter OpenAI provider uses the OpenAI SDK configured for OpenRouter:
+
+```typescript
+{
+  apiKey: string;
+  defaultModel?: string;
+  baseUrl?: string;
+  siteUrl?: string;
+  siteName?: string;
+  maxRetries?: number;
+  timeout?: number;
+}
+```
+
+## Caching Configuration
+
+### Redis Cache Settings
+- TTL: Configurable via `REDIS_CACHE_TTL` (default: 3600 seconds)
+- Cache key format: `llm:{hash of request parameters}`
+- Cache bypass: Set `CACHE_ENABLED=false`
+
+### Cache Key Generation
+Cache keys are generated based on:
+- Messages content and role
+- Model selection
+- Temperature
+- Max tokens
+- Top P
+- Frequency penalty
+- Presence penalty
+- Stop sequences
+
+## Testing
+
+### Running Tests
+```bash
+# Unit tests
+npm run test
+
+# Integration tests
+npm run test:integration
+
+# E2E tests
+npm run test:e2e
+```
+
+### Test Coverage Requirements
+- Unit test coverage: >90%
+- Integration test coverage: >80%
+- E2E test coverage: >70%
+
+### Performance Metrics
+- Response time: <200ms (p95)
+- Cache hit rate: >80%
+- Error rate: <1%
+
+## Error Handling
+
+### Retry Strategy
+- Maximum retries: Configurable via `MAX_RETRIES`
+- Exponential backoff: `Math.pow(2, retryCount) * 1000ms`
+- Retryable errors:
+  - Network timeouts
+  - Rate limiting
+  - 5xx server errors
+
+### Error Types
+- `PROVIDER_ERROR`: Provider-specific errors
+- `RATE_LIMIT`: Rate limit exceeded
+- `CONTEXT_LENGTH`: Maximum context length exceeded
+- `TIMEOUT`: Request timeout
+- `MODEL_NOT_FOUND`: Model not available
+- `INVALID_REQUEST`: Invalid parameters
+- `UNKNOWN`: Unexpected errors
+
+## Monitoring
+
+### Health Checks
+- Provider health: API accessibility
+- Redis health: Connection status
+- Overall service health: Combined status
+
+### Metrics
+- Request latency
+- Cache hit rate
+- Error rate
+- Token usage
+- Provider availability
+
+// File: services\llm-service\docs\implementation.md
+----------------------------------------
+# LLM Service Implementation Status
 
 ## Current Status
-- Basic NestJS service structure ✓
-- Health check endpoints ✓
-- Configuration module ✓
-- Database connection setup (TypeORM + PostgreSQL) ✓
-- User management implementation ✓
-  - User entity ✓
-  - User DTOs ✓
-  - User service ✓
-  - User controller ✓
-  - User module ✓
-- Basic authorization setup ✓
-  - Role decorator ✓
-  - JWT guard ✓
-  - Roles guard ✓
+
+The LLM service has been set up with the following components:
+
+### Core Infrastructure
+- ✅ Project structure and configuration
+- ✅ Docker containerization
+- ✅ Environment configuration
+- ✅ Testing infrastructure
+- ✅ Documentation
+
+### API Layer
+- ✅ REST API setup
+- ✅ GraphQL API setup
+- ✅ WebSocket support
+- ✅ Health monitoring endpoints
+
+### Provider Integration
+- ✅ Provider interface definition
+- ✅ Provider factory implementation
+- ✅ OpenRouter integration
+- ✅ DeepSeek direct integration
+- ✅ Error handling
+
+### Caching & Performance
+- ✅ Redis integration
+- ✅ Response caching
+- ✅ Rate limiting
+- ✅ Performance monitoring
+
+### Testing
+- ✅ Unit test setup
+- ✅ Integration test setup
+- ✅ E2E test setup
+- ✅ Test documentation
 
 ## Next Steps
 
-### 1. Authentication Module Implementation
-- Create auth module structure
-- Implement JWT strategy
-- Create auth service with:
-  - Login functionality
-  - Token generation
-  - Password hashing
-  - Token refresh mechanism
-- Add auth controller with endpoints:
-  - POST /auth/login
-  - POST /auth/logout
-  - POST /auth/refresh
+### 1. Cache Implementation (Priority: High)
+- [ ] Implement Redis service
+  - [ ] Connection management
+  - [ ] Cache operations
+  - [ ] Error handling
+- [ ] Cache strategies
+  - [ ] Response caching
+  - [ ] Rate limit tracking
+  - [ ] Token usage tracking
 
-### 2. OAuth2 Integration
-- Configure OAuth2 strategy
-- Implement provider-specific logic
-- Add OAuth2 endpoints:
-  - GET /auth/oauth2/:provider
-  - GET /auth/oauth2/:provider/callback
+### 3. API Implementation (Priority: High)
+- [ ] REST endpoints
+  - [ ] Completion endpoint
+  - [ ] Streaming endpoint
+  - [ ] Provider management
+- [ ] GraphQL resolvers
+  - [ ] Query resolvers
+  - [ ] Subscription resolvers
+  - [ ] Type definitions
 
-### 3. Security Enhancements
-- Add rate limiting
-- Implement request validation
-- Configure CORS
-- Set up security headers
-- Define password policies
+### 4. Monitoring Implementation (Priority: Medium)
+- [ ] Health checks
+  - [ ] Provider health
+  - [ ] Redis health
+  - [ ] System health
+- [ ] Metrics collection
+  - [ ] Request metrics
+  - [ ] Cache metrics
+  - [ ] Provider metrics
 
-### 4. Testing
-- Unit tests for services
-- E2E tests for auth flows
-- Integration tests for user operations
-- Security testing scenarios
+### 5. Security Implementation (Priority: High)
+- [ ] Rate limiting
+  - [ ] Global limits
+  - [ ] Per-user limits
+  - [ ] Provider limits
+- [ ] Input validation
+  - [ ] Request validation
+  - [ ] Token limits
+  - [ ] Content filtering
 
-### 5. Documentation
-- API documentation
-- Authentication flows
-- Environment setup guide
-- Testing guide
+### 6. Testing Implementation (Priority: Medium)
+- [ ] Unit tests
+  - [ ] Provider tests
+  - [ ] Service tests
+  - [ ] Controller tests
+- [ ] Integration tests
+  - [ ] API tests
+  - [ ] Cache tests
+  - [ ] Provider tests
+- [ ] E2E tests
+  - [ ] Complete flow tests
+  - [ ] Error scenarios
+  - [ ] Performance tests
 
-## Required Environment Variables
-Current:
+## Implementation Details
+
+### Provider Implementation
+
+#### OpenRouter Integration
+The OpenRouter integration has been completed with two implementations:
+
+1. Direct API Implementation (`OpenRouterProvider`)
+```typescript
+// Features implemented:
+- API client with proper headers and configuration
+- Full request/response mapping
+- Comprehensive error handling with retries
+  - Context length errors
+  - Rate limiting
+  - Authentication errors
+  - Network timeouts
+- Streaming support with proper event handling
+  - SSE parsing and processing
+  - Chunk aggregation
+  - Error recovery
+- Rate limiting and timeout handling
+- Unit tests with mocked responses
+  - Error scenarios
+  - Streaming responses
+  - Edge cases
 ```
-# Database Configuration
-DB_HOST=postgres
-DB_PORT=5432
-DB_USER=admin
-DB_PASSWORD=admin
-DB_NAME=auth
 
-# Application Configuration
-PORT=3000
-NODE_ENV=development
+2. OpenAI-Compatible Implementation (`OpenRouterOpenAIProvider`)
+```typescript
+// Features implemented:
+- OpenAI SDK integration
+- Streaming support via OpenAI interface
+  - Chunk processing
+  - Token counting
+  - Metadata handling
+- Proper error mapping from OpenAI to LLM errors
+  - Context length detection
+  - API errors
+  - Network issues
+- Configurable timeout and retry logic
+- Full test coverage with mocked SDK
+  - Error handling
+  - Streaming
+  - Response mapping
 ```
 
-To be added:
+Both implementations support:
+- Multiple model selection
+- Custom request parameters
+- Usage tracking
+- Health monitoring
+- Proper error propagation
+
+#### DeepSeek Integration
+```typescript
+// Implementation steps:
+1. Direct API integration
+2. Model management
+3. Token counting
+4. Response processing
+5. Error mapping
 ```
-# JWT Configuration
-JWT_SECRET=
-JWT_EXPIRATION=
 
-# OAuth2 Configuration
-OAUTH2_CLIENT_ID=
-OAUTH2_CLIENT_SECRET=
-OAUTH2_CALLBACK_URL=
+### Cache Implementation
 
-# Security
-PASSWORD_SALT_ROUNDS=
-RATE_LIMIT_WINDOW=
-RATE_LIMIT_MAX_REQUESTS=
+#### Redis Service
+```typescript
+// Implementation steps:
+1. Connection pool
+2. Cache operations
+3. Error handling
+4. Health checks
 ```
 
-## Dependencies Status
-Installed:
-- @nestjs/common
-- @nestjs/config
-- @nestjs/core
-- @nestjs/platform-express
-- @nestjs/typeorm
-- @nestjs/passport
-- @nestjs/jwt
-- passport
-- passport-jwt
-- passport-oauth2
-- bcrypt
-- class-validator
-- class-transformer
-- typeorm
-- pg
+#### Cache Strategies
+```typescript
+// Implementation steps:
+1. Response caching
+2. Cache invalidation
+3. Cache size management
+4. Performance optimization
+```
 
-## Database Schema
-### Users Table
-- id (UUID) ✓
-- email (unique) ✓
-- password (hashed) ✓
-- firstName ✓
-- lastName ✓
-- role ✓
-- lastLogin ✓
-- createdAt ✓
-- updatedAt ✓
+### API Implementation
 
-## API Endpoints Status
-### User Management (Protected by JWT & Roles Guard)
-- POST /users ✓
-- GET /users ✓
-- GET /users/:id ✓
-- PATCH /users/:id ✓
-- DELETE /users/:id ✓
+#### REST Controllers
+```typescript
+// Implementation steps:
+1. Route handlers
+2. Request validation
+3. Response formatting
+4. Error handling
+```
 
-### Authentication (To be implemented)
-- POST /auth/login
-- POST /auth/logout
-- POST /auth/refresh
-- GET /auth/profile
+#### GraphQL Resolvers
+```typescript
+// Implementation steps:
+1. Query resolvers
+2. Mutation resolvers
+3. Subscription setup
+4. Type definitions
+```
 
-### OAuth2 (To be implemented)
-- GET /auth/oauth2/:provider
-- GET /auth/oauth2/:provider/callback
+## Testing Strategy
+
+### Unit Testing
+- Test individual components in isolation
+- Mock external dependencies
+- Focus on business logic
+- Ensure high coverage
+
+### Integration Testing
+- Test component interactions
+- Use test containers
+- Verify API contracts
+- Test error scenarios
+
+### E2E Testing
+- Test complete flows
+- Verify real provider integration
+- Test performance
+- Validate monitoring
+
+## Deployment Strategy
+
+### Development
+1. Local development setup
+2. Docker Compose environment
+3. Test environment
+4. Documentation
+
+### Staging
+1. Provider integration testing
+2. Performance testing
+3. Security testing
+4. Monitoring setup
+
+### Production
+1. Production configuration
+2. Scaling setup
+3. Monitoring
+4. Backup strategy
+
+## Maintenance Plan
+
+### Regular Tasks
+1. Log rotation
+2. Cache cleanup
+3. Metric collection
+4. Health monitoring
+
+### Updates
+1. Provider API updates
+2. Security patches
+3. Dependency updates
+4. Performance tuning
+
+## Success Criteria
+
+1. Provider Integration
+- [ ] Successful API integration
+- [ ] Error handling
+- [ ] Performance metrics
+- [ ] Documentation
+
+2. Cache Performance
+- [ ] Hit rate > 80%
+- [ ] Response time < 100ms
+- [ ] Memory usage < 1GB
+- [ ] Error rate < 0.1%
+
+3. API Reliability
+- [ ] Uptime > 99.9%
+- [ ] Response time < 200ms
+- [ ] Error rate < 1%
+- [ ] Rate limit compliance
+
+4. Monitoring
+- [ ] Real-time metrics
+- [ ] Alert system
+- [ ] Performance tracking
+- [ ] Cost monitoring
+
+// File: services\llm-service\docs\next-steps.md
+----------------------------------------
+# LLM Service - Next Implementation Phase
+
+## Context
+- Project: VAIM2 Phase 4 Implementation
+- Current Branch: master (commit b4ee04f)
+- Service: llm-service
+- Documentation: /services/llm-service/docs/*
+
+## Task Objective
+Complete the OpenRouter provider integration with comprehensive testing and documentation, focusing on production readiness and maintainability.
+
+## Implementation Requirements
+
+### 1. Integration Testing (Priority: High)
+- [ ] Test Container Setup
+  - [ ] Docker Compose test configuration
+  - [ ] Redis test container
+  - [ ] Mock OpenRouter API container
+  - [ ] Test environment variables
+
+- [ ] Provider Integration Tests
+  - [ ] OpenRouter direct provider
+    - [ ] Success scenarios
+    - [ ] Error handling
+    - [ ] Rate limiting
+    - [ ] Timeout handling
+  - [ ] OpenRouter OpenAI provider
+    - [ ] SDK integration
+    - [ ] Error mapping
+    - [ ] Configuration validation
+
+### 2. E2E Testing (Priority: High)
+- [ ] API Endpoint Tests
+  - [ ] REST endpoints
+    - [ ] Completion endpoint
+    - [ ] Streaming endpoint
+    - [ ] Health checks
+  - [ ] GraphQL resolvers
+    - [ ] Query resolvers
+    - [ ] Subscription resolvers
+    - [ ] Error handling
+
+- [ ] Test Scenarios
+  - [ ] Authentication
+  - [ ] Rate limiting
+  - [ ] Caching
+  - [ ] Load testing
+  - [ ] Error scenarios
+
+### 3. Documentation Updates (Priority: Medium)
+- [ ] API Documentation
+  - [ ] OpenAPI/Swagger specs
+  - [ ] GraphQL schema documentation
+  - [ ] Response formats
+  - [ ] Error codes
+
+- [ ] Provider Documentation
+  - [ ] Configuration guide
+  - [ ] Environment variables
+  - [ ] Rate limits
+  - [ ] Error handling
+
+- [ ] Architecture Documentation
+  - [ ] Component diagrams
+  - [ ] Sequence diagrams
+  - [ ] Data flow diagrams
+  - [ ] Caching strategy
+
+### 4. Performance Optimization (Priority: Medium)
+- [ ] Caching Implementation
+  - [ ] Response caching
+  - [ ] Token usage tracking
+  - [ ] Cache invalidation
+  - [ ] Memory management
+
+- [ ] Rate Limiting
+  - [ ] Provider-specific limits
+  - [ ] User quotas
+  - [ ] Burst handling
+
+## Reference Files
+- Test Configuration: test/jest-e2e.config.ts
+- Docker Config: docker-compose.test.yml
+- Provider Tests: src/providers/implementations/__tests__/*
+- Documentation: docs/*
+
+## Command Examples
+```bash
+# Run integration tests
+npm run test:integration
+
+# Run E2E tests
+npm run test:e2e
+
+# Generate documentation
+npm run docs:generate
+
+# Start test environment
+docker-compose -f docker-compose.test.yml up -d
+```
+
+## Success Criteria
+
+### 1. Test Coverage
+- [ ] Unit test coverage > 90%
+- [ ] Integration test coverage > 80%
+- [ ] E2E test coverage > 70%
+- [ ] All critical paths tested
+
+### 2. Documentation Quality
+- [ ] Complete API documentation
+- [ ] Up-to-date architecture diagrams
+- [ ] Clear configuration guide
+- [ ] Comprehensive error handling docs
+
+### 3. Performance Metrics
+- [ ] Response time < 200ms (p95)
+- [ ] Cache hit rate > 80%
+- [ ] Error rate < 1%
+- [ ] Resource usage within limits
+
+## Notes
+- Ensure backward compatibility
+- Follow existing patterns
+- Document all assumptions
+- Include error handling examples
+- Add monitoring hooks
+
+// File: services\llm-service\docs\providers.md
+----------------------------------------
+# LLM Service Provider Documentation
+
+## OpenRouter Integration
+
+The LLM Service implements two different approaches for OpenRouter integration:
+1. Direct API integration using axios
+2. OpenAI SDK integration
+
+### OpenRouter Direct Provider
+
+The direct provider implementation uses axios to communicate directly with the OpenRouter API.
+
+#### Features
+- Direct HTTP requests to OpenRouter API
+- Custom error handling and mapping
+- Built-in retry mechanism
+- Streaming support
+- Request timeout handling
+- Rate limit handling
+
+#### Implementation
+
+```typescript
+class OpenRouterProvider implements LLMProvider {
+  private client: AxiosInstance;
+  private readonly defaultModel: string;
+  private readonly maxRetries: number;
+  private readonly timeout: number;
+
+  constructor(config: OpenRouterConfig) {
+    // Initialize with configuration
+  }
+
+  async complete(messages: ChatMessage[], options?: LLMRequestOptions): Promise<LLMResponse>;
+  async completeStream(messages: ChatMessage[], options?: LLMRequestOptions): Promise<AsyncIterableIterator<LLMResponse>>;
+  async healthCheck(): Promise<boolean>;
+}
+```
+
+#### Error Handling
+- Authentication errors (401)
+- Rate limiting (429)
+- Context length exceeded (400)
+- Model not found (404)
+- Timeouts (408)
+- Network errors
+- Unexpected errors
+
+### OpenRouter OpenAI Provider
+
+The OpenAI SDK provider uses the official OpenAI SDK configured for OpenRouter.
+
+#### Features
+- OpenAI SDK integration
+- Automatic retries
+- Type-safe requests
+- Built-in error handling
+- Streaming support
+- Request timeout handling
+
+#### Implementation
+
+```typescript
+class OpenRouterOpenAIProvider implements LLMProvider {
+  private client: OpenAI;
+  private readonly defaultModel: string;
+  private readonly maxRetries: number;
+  private readonly timeout: number;
+
+  constructor(config: OpenRouterConfig) {
+    // Initialize with OpenAI SDK configuration
+  }
+
+  async complete(messages: ChatMessage[], options?: LLMRequestOptions): Promise<LLMResponse>;
+  async completeStream(messages: ChatMessage[], options?: LLMRequestOptions): Promise<AsyncIterableIterator<LLMResponse>>;
+  async healthCheck(): Promise<boolean>;
+}
+```
+
+#### Error Handling
+- APIError handling
+- Rate limit detection
+- Context length validation
+- Model availability checks
+- Timeout handling
+- Network error handling
+
+## Testing Infrastructure
+
+### Mock OpenRouter API
+
+The test environment includes a mock OpenRouter API that simulates various scenarios:
+
+```typescript
+// Mock API endpoints
+app.post('/api/v1/chat/completions', (req, res) => {
+  // Handle completion requests
+});
+
+app.get('/api/v1/models', (req, res) => {
+  // Handle model listing
+});
+```
+
+#### Features
+- Rate limiting simulation (10 requests/minute)
+- Context length validation (8192 tokens)
+- Configurable timeouts
+- Authentication validation
+- Streaming response simulation
+- Error scenario simulation
+
+### Test Cases
+
+#### Provider Tests
+```typescript
+describe('OpenRouterProvider', () => {
+  // Initialization tests
+  it('should initialize successfully');
+  it('should handle initialization failure');
+
+  // Completion tests
+  it('should complete messages successfully');
+  it('should handle context length errors');
+  it('should handle rate limiting');
+  it('should handle timeouts');
+  it('should handle invalid API key');
+  it('should retry on failure');
+
+  // Streaming tests
+  it('should handle streaming responses');
+  it('should handle streaming errors');
+  it('should handle streaming timeouts');
+
+  // Health check tests
+  it('should return true when API is accessible');
+  it('should return false when API is inaccessible');
+});
+```
+
+### Integration Testing
+
+#### Docker Compose Setup
+```yaml
+services:
+  mock-openrouter:
+    build:
+      context: ./test/mock-openrouter
+    ports:
+      - "3001:3000"
+    networks:
+      - llm-test-network
+```
+
+#### Test Environment Variables
+```env
+OPENROUTER_API_KEY=test-key
+OPENROUTER_BASE_URL=http://mock-openrouter:3000/api/v1
+```
+
+## Provider Configuration
+
+### Direct Provider Configuration
+```typescript
+interface OpenRouterConfig {
+  apiKey: string;
+  defaultModel?: string;
+  baseUrl?: string;
+  siteUrl?: string;
+  siteName?: string;
+  maxRetries?: number;
+  timeout?: number;
+}
+```
+
+### OpenAI SDK Configuration
+```typescript
+{
+  baseURL: config.baseUrl || 'https://openrouter.ai/api/v1',
+  apiKey: config.apiKey,
+  defaultHeaders: {
+    'HTTP-Referer': config.siteUrl || '',
+    'X-Title': config.siteName || '',
+  },
+  defaultQuery: {
+    timeout: config.timeout.toString(),
+  },
+  maxRetries: config.maxRetries,
+}
+```
+
+## Error Mapping
+
+### Provider-Specific Errors
+```typescript
+enum LLMErrorType {
+  PROVIDER_ERROR = 'PROVIDER_ERROR',
+  RATE_LIMIT = 'RATE_LIMIT',
+  CONTEXT_LENGTH = 'CONTEXT_LENGTH',
+  TIMEOUT = 'TIMEOUT',
+  MODEL_NOT_FOUND = 'MODEL_NOT_FOUND',
+  INVALID_REQUEST = 'INVALID_REQUEST',
+  UNKNOWN = 'UNKNOWN',
+}
+```
+
+### Error Handling Strategy
+1. Attempt to identify specific error type
+2. Map to standardized LLMError
+3. Include original error details
+4. Apply retry strategy if applicable
+5. Propagate error with context
+
+## Performance Considerations
+
+### Retry Strategy
+- Maximum retries configurable
+- Exponential backoff
+- Specific error types for retries
+- Timeout handling
+
+### Rate Limiting
+- Per-provider rate limits
+- Global rate limiting
+- Burst handling
+- Queue management
+
+### Caching
+- Response caching
+- Cache key generation
+- TTL management
+- Cache invalidation
+
+## Monitoring
+
+### Health Checks
+- Provider availability
+- API response time
+- Error rates
+- Rate limit status
+
+### Metrics
+- Request latency
+- Token usage
+- Error rates
+- Cache hit rates
+- Provider availability
 

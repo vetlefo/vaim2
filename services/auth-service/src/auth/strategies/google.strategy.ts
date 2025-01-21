@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-google-oauth20';
 import { ConfigService } from '@nestjs/config';
 import { ProviderFactory } from '../providers/provider.factory';
+import { Request } from 'express';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
@@ -12,18 +13,33 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   ) {
     const provider = providerFactory.getProvider('google');
     
+    const clientID = configService.get('GOOGLE_CLIENT_ID');
+    const clientSecret = configService.get('GOOGLE_CLIENT_SECRET');
+    const callbackURL = configService.get('GOOGLE_CALLBACK_URL');
+
+    if (!clientID || !clientSecret || !callbackURL) {
+      throw new Error('Google OAuth configuration is missing');
+    }
+
     super({
-      clientID: configService.get('GOOGLE_CLIENT_ID'),
-      clientSecret: configService.get('GOOGLE_CLIENT_SECRET'),
-      callbackURL: configService.get('GOOGLE_CALLBACK_URL'),
+      clientID,
+      clientSecret,
+      callbackURL,
       scope: provider.scope,
+      passReqToCallback: true,
     });
   }
 
   async validate(
+    request: Request,
     accessToken: string,
     refreshToken: string,
-    profile: any,
+    profile: {
+      id: string;
+      emails: Array<{ value: string }>;
+      name: { givenName: string; familyName: string };
+      photos: Array<{ value: string }>;
+    },
   ) {
     const provider = this.providerFactory.getProvider('google');
     const mappedProfile = await provider.mapProfile({

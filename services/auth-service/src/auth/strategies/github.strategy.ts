@@ -13,10 +13,18 @@ export class GitHubStrategy extends PassportStrategy(Strategy, 'github') {
   ) {
     const provider = providerFactory.getProvider('github');
     
+    const clientID = configService.get('GITHUB_CLIENT_ID');
+    const clientSecret = configService.get('GITHUB_CLIENT_SECRET');
+    const callbackURL = configService.get('GITHUB_CALLBACK_URL');
+
+    if (!clientID || !clientSecret || !callbackURL) {
+      throw new Error('GitHub OAuth configuration is missing');
+    }
+
     super({
-      clientID: configService.get('GITHUB_CLIENT_ID'),
-      clientSecret: configService.get('GITHUB_CLIENT_SECRET'),
-      callbackURL: configService.get('GITHUB_CALLBACK_URL'),
+      clientID,
+      clientSecret,
+      callbackURL,
       scope: ['user:email', ...provider.scope],
     });
   }

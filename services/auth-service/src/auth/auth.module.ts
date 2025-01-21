@@ -3,15 +3,16 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UsersModule } from '../users/users.module';
-import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
-import { OAuth2Controller } from './controllers/oauth2.controller';
-import { JwtStrategy } from './strategies/jwt.strategy';
-import { OAuth2Strategy } from './strategies/oauth2.strategy';
-import { GoogleStrategy } from './strategies/google.strategy';
-import { GitHubStrategy } from './strategies/github.strategy';
-import { ProviderFactory } from './providers/provider.factory';
+import { AuthService } from '@auth/auth.service';
+import { AuthController } from '@auth/auth.controller';
+import { OAuth2Controller } from '@auth/controllers/oauth2.controller';
+import { JwtStrategy } from '@auth/strategies/jwt.strategy';
+import { OAuth2Strategy } from '@auth/strategies/oauth2.strategy';
+import { GoogleStrategy } from '@auth/strategies/google.strategy';
+import { GitHubStrategy } from '@auth/strategies/github.strategy';
+import { ProviderFactory } from '@auth/providers/provider.factory';
 import { RedisModule } from '../redis/redis.module';
+import { RolesGuard } from './guards/roles.guard';
 
 @Module({
   imports: [
@@ -36,8 +37,9 @@ import { RedisModule } from '../redis/redis.module';
     OAuth2Strategy,
     GoogleStrategy,
     GitHubStrategy,
-    ProviderFactory
+    ProviderFactory,
+    RolesGuard
   ],
-  exports: [AuthService],
+  exports: [AuthService, RolesGuard],
 })
 export class AuthModule {}
