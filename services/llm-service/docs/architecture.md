@@ -2,209 +2,206 @@
 
 ## Overview
 
-The LLM (Large Language Model) service provides a unified interface for accessing various LLM providers through both GraphQL and REST APIs. The service is designed to be highly modular, scalable, and maintainable, with support for multiple providers, caching, and real-time streaming.
+The LLM Service is designed with a modular architecture that separates concerns and enables easy extension with new providers. The service integrates with OpenRouter as the primary LLM provider, with support for both direct API calls and OpenAI SDK integration.
 
 ## Core Components
 
-### 1. Provider Layer
+```mermaid
+graph TD
+    A[API Layer] --> B[LLM Service]
+    B --> C[Provider Factory]
+    C --> D[OpenRouter Provider]
+    C --> E[OpenRouter OpenAI Provider]
+    B --> F[Redis Cache]
+    A --> G[GraphQL Resolvers]
+    G --> B
+```
 
-#### Provider Interface
-- Standardized interface for all LLM providers
-- Support for both completion and streaming responses
-- Error handling and retry mechanisms
-- Health check capabilities
+### API Layer
+- REST endpoints for completions and health checks
+- GraphQL resolvers for queries and subscriptions
+- Request validation and error handling
+- Response formatting
 
-#### Provider Implementations
-- OpenRouter Provider (Primary)
-  - Access to multiple models through a single API
-  - Support for DeepSeek, Claude, and other models
-  - Automatic fallback handling
-- Direct Provider Implementations
-  - DeepSeek Provider for direct API access
-  - Extensible for other provider integrations
+### LLM Service
+- Core business logic
+- Provider selection and management
+- Caching strategy
+- Error handling and retries
+- Request/response transformation
 
-### 2. API Layer
+### Provider Factory
+- Provider instantiation and configuration
+- Provider health checks
+- Model mapping and validation
+- Fallback handling
 
-#### GraphQL API
-- Query-based completions
-- Subscription-based streaming
-- Provider and model management
+### Redis Cache
+- Response caching
+- Cache invalidation
+- TTL management
 - Health monitoring
 
-#### REST API
-- Standard HTTP endpoints
-- Server-Sent Events (SSE) for streaming
-- Health check endpoints
-- Provider management endpoints
+## Test Infrastructure
 
-### 3. Caching Layer
+```mermaid
+graph TD
+    A[Test Runner] --> B[Unit Tests]
+    A --> C[Integration Tests]
+    A --> D[E2E Tests]
+    C --> E[Mock OpenRouter API]
+    C --> F[Redis Test Instance]
+    D --> E
+    D --> F
+    E --> G[Rate Limiter]
+    E --> H[Error Simulator]
+    E --> I[Stream Handler]
+```
 
-#### Redis Integration
-- Response caching for improved performance
-- Rate limiting implementation
-- Token usage tracking
-- Health monitoring
+### Mock OpenRouter API
+- Simulates OpenRouter API responses
+- Implements rate limiting
+- Handles streaming responses
+- Simulates various error conditions
+- Configurable latency and timeouts
 
-### 4. Infrastructure
+### Test Containers
+- Redis test instance
+- Mock OpenRouter API service
+- Isolated test network
+- Health checks and readiness probes
 
-#### Service Architecture
-- NestJS-based microservice
-- GraphQL with Apollo Server
-- WebSocket support for real-time features
-- Health monitoring with Terminus
-
-#### Docker Support
-- Multi-stage builds
-- Development and production configurations
-- Test environment setup
-- Health checks
+### Test Coverage
+- Unit tests: Provider implementations, service logic
+- Integration tests: Redis caching, provider integration
+- E2E tests: API endpoints, GraphQL resolvers
 
 ## Data Flow
 
-### 1. Completion Request Flow
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API
+    participant Cache
+    participant Service
+    participant Provider
+    
+    Client->>API: Request completion
+    API->>Cache: Check cache
+    alt Cache hit
+        Cache-->>API: Return cached response
+        API-->>Client: Return response
+    else Cache miss
+        Cache-->>Service: No cache entry
+        Service->>Provider: Request completion
+        Provider-->>Service: Return completion
+        Service->>Cache: Store response
+        Service-->>API: Return response
+        API-->>Client: Return response
+    end
 ```
-Client → API Layer → Provider Factory → Provider Implementation → LLM API
-   ↑                      ↑                     ↓
-   └──────────────────── Cache ←────────────────┘
-```
-
-### 2. Streaming Request Flow
-```
-Client ←→ WebSocket ←→ Subscription Manager ←→ Provider Implementation ←→ LLM API
-```
-
-### 3. Cache Flow
-```
-Request → Cache Check → Cache Hit → Return Cached Response
-                    └→ Cache Miss → Provider Request → Cache Response → Return
-```
-
-## Configuration
-
-### Environment Variables
-- Provider API keys and configurations
-- Redis connection settings
-- Service ports and endpoints
-- Rate limiting parameters
-- Cache TTL settings
-
-### Provider Configuration
-- Default provider selection
-- Model preferences
-- Retry strategies
-- Timeout settings
 
 ## Error Handling
 
-### Provider Errors
-- API errors
-- Rate limiting
-- Context length
-- Timeout handling
+```mermaid
+graph TD
+    A[Error Occurs] --> B{Error Type}
+    B -->|Provider Error| C[Retry with Backoff]
+    B -->|Rate Limit| D[Queue Request]
+    B -->|Context Length| E[Return Error]
+    B -->|Timeout| F[Retry with Timeout]
+    C --> G{Max Retries?}
+    G -->|Yes| H[Return Error]
+    G -->|No| I[Retry Request]
+```
 
-### System Errors
-- Connection issues
-- Cache failures
-- Invalid requests
+### Error Types
+- Provider errors: Authentication, availability
+- Rate limiting: Per-provider and global limits
+- Context length: Model-specific limits
+- Timeouts: Network and provider timeouts
+- Validation: Request parameter validation
 
-## Monitoring
+## Caching Strategy
 
-### Health Checks
-- Provider availability
-- Redis connection
-- System resources
+```mermaid
+graph TD
+    A[Request] --> B{Cache Enabled?}
+    B -->|Yes| C{Cache Entry Exists?}
+    B -->|No| D[Forward Request]
+    C -->|Yes| E[Return Cached]
+    C -->|No| F[Forward Request]
+    F --> G[Cache Response]
+    G --> H[Return Response]
+```
 
-### Metrics
-- Request latency
-- Cache hit rates
-- Token usage
-- Error rates
+### Cache Implementation
+- Redis as primary cache store
+- Configurable TTL per response
+- Cache key generation based on request parameters
+- Cache invalidation on error
+- Cache bypass for streaming requests
 
-## Security
+## Provider Implementation
 
-### API Security
-- Rate limiting
-- Input validation
-- Output filtering
-- Token usage monitoring
+```mermaid
+graph TD
+    A[Provider Factory] --> B[Base Provider Interface]
+    B --> C[OpenRouter Direct]
+    B --> D[OpenRouter OpenAI]
+    C --> E[Axios Client]
+    D --> F[OpenAI SDK]
+    E --> G[Error Handling]
+    F --> G
+    G --> H[Response Mapping]
+```
 
-### Data Security
-- Request/response encryption
-- API key management
-- Secure environment variables
+### Provider Interface
+- Standard methods for all providers
+- Error handling and retries
+- Response transformation
+- Health checks
+- Configuration validation
 
-## Testing
+## Testing Architecture
 
-### Unit Tests
-- Provider implementations
-- Service logic
-- Error handling
-- Cache operations
+```mermaid
+graph TD
+    A[Test Suite] --> B[Unit Tests]
+    A --> C[Integration Tests]
+    A --> D[E2E Tests]
+    B --> E[Jest]
+    C --> F[Docker Compose]
+    D --> F
+    F --> G[Mock API]
+    F --> H[Redis]
+    G --> I[Rate Limiter]
+    G --> J[Error Simulator]
+```
 
-### Integration Tests
-- API endpoints
-- WebSocket connections
-- Cache integration
-- Provider communication
+### Test Components
+- Mock OpenRouter API for integration testing
+- Redis instance for cache testing
+- Docker Compose for test environment
+- Jest for test execution
+- Supertest for HTTP testing
 
-### End-to-End Tests
-- Complete request flows
-- Streaming functionality
-- Error scenarios
-- Performance testing
+## Monitoring and Health Checks
 
-## Deployment
+```mermaid
+graph TD
+    A[Health Check] --> B[Provider Status]
+    A --> C[Redis Status]
+    A --> D[API Status]
+    B --> E[Aggregate Status]
+    C --> E
+    D --> E
+    E --> F[Health Endpoint]
+```
 
-### Docker Deployment
-- Multi-stage builds
-- Production optimization
-- Environment configuration
-- Health monitoring
-
-### Scaling Considerations
-- Horizontal scaling
-- Cache distribution
-- Load balancing
-- Resource management
-
-## Future Enhancements
-
-### Planned Features
-- Additional provider integrations
-- Advanced caching strategies
-- Enhanced monitoring
-- Performance optimizations
-
-### Potential Improvements
-- Provider-specific optimizations
-- Custom model support
-- Advanced rate limiting
-- Cost optimization strategies
-
-## Documentation
-
-### API Documentation
-- GraphQL schema
-- REST endpoints
-- WebSocket protocols
-- Error codes
-
-### Integration Guides
-- Provider setup
-- Client integration
-- Error handling
-- Best practices
-
-## Maintenance
-
-### Regular Tasks
-- Cache cleanup
-- Log rotation
-- Metric collection
-- Health monitoring
-
-### Updates
-- Provider API updates
-- Security patches
-- Dependency updates
-- Performance tuning
+### Health Monitoring
+- Provider availability checks
+- Redis connection status
+- API endpoint health
+- Response time monitoring
+- Error rate tracking

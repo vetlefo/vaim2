@@ -54,12 +54,16 @@ export default class OpenRouterProvider implements LLMProvider {
         const response = await this.client.post('/chat/completions', {
           model: options?.model || this.defaultModel,
           messages: messages,
-          temperature: options?.temperature || 0.7,
+          temperature: options?.temperature || 1.0,
           max_tokens: options?.maxTokens || 4096,
-          top_p: options?.topP || 1,
-          frequency_penalty: options?.frequencyPenalty,
-          presence_penalty: options?.presencePenalty,
-          stop: options?.stop,
+          top_p: options?.topP || 1.0,
+          top_k: 0,
+          frequency_penalty: options?.frequencyPenalty || 0.0,
+          presence_penalty: options?.presencePenalty || 0.0,
+          repetition_penalty: 1.0,
+          min_p: 0.0,
+          top_a: 0.0,
+          stop: options?.stop || [],
           stream: false,
         });
 
@@ -130,24 +134,63 @@ export default class OpenRouterProvider implements LLMProvider {
     startTime: number,
     model: string
   ): AsyncIterableIterator<LLMResponse> {
-    for await (const chunk of stream) {
-      const data = JSON.parse(chunk.toString());
-      if (data.choices?.[0]?.delta?.content) {
-        yield {
-          text: data.choices[0].delta.content,
-          usage: {
-            promptTokens: 0,
-            completionTokens: 0,
-            totalTokens: 0,
-          },
-          metadata: {
-            model: model,
-            provider: 'openrouter',
-            latency: Date.now() - startTime,
-            timestamp: new Date().toISOString(),
-          },
-        };
+    let buffer = '';
+    
+    try {
+      for await (const chunk of stream) {
+        const lines = (buffer + chunk.toString()).split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.trim() === '') continue;
+          if (line.startsWith('data: ')) {
+            const data = JSON.parse(line.slice(6));
+            if (data.choices?.[0]?.delta?.content) {
+              yield {
+                text: data.choices[0].delta.content,
+                usage: {
+                  promptTokens: 0,
+                  completionTokens: 0,
+                  totalTokens: 0,
+                },
+                metadata: {
+                  model: model,
+                  provider: 'openrouter',
+                  latency: Date.now() - startTime,
+                  timestamp: new Date().toISOString(),
+                },
+              };
+            }
+          }
+        }
       }
+
+      // Handle any remaining data in buffer
+      if (buffer.trim() !== '') {
+        try {
+          const data = JSON.parse(buffer.startsWith('data: ') ? buffer.slice(6) : buffer);
+          if (data.choices?.[0]?.delta?.content) {
+            yield {
+              text: data.choices[0].delta.content,
+              usage: {
+                promptTokens: 0,
+                completionTokens: 0,
+                totalTokens: 0,
+              },
+              metadata: {
+                model: model,
+                provider: 'openrouter',
+                latency: Date.now() - startTime,
+                timestamp: new Date().toISOString(),
+              },
+            };
+          }
+        } catch (e) {
+          // Ignore parse errors for incomplete chunks
+        }
+      }
+    } catch (error) {
+      throw this.handleError(error);
     }
   }
 
