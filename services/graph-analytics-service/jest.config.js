@@ -15,8 +15,13 @@ module.exports = {
     '^@analytics/(.*)$': '<rootDir>/src/analytics/$1',
     '^@integration/(.*)$': '<rootDir>/src/integration/$1',
     '^@common/(.*)$': '<rootDir>/src/common/$1',
+    '^@neo4j/(.*)$': '<rootDir>/src/neo4j/$1',
   },
-  setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
+  setupFilesAfterEnv: ['<rootDir>/test/rate-limit-setup.ts'],
+  testEnvironment: 'node',
+  moduleNameMapper: {
+    '^test/(.*)$': '<rootDir>/test/$1'
+  },
   coverageThreshold: {
     global: {
       branches: 70,

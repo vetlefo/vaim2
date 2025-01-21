@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.2.1] - 2025-01-21
+### Added
+- Dedicated test setup for rate limiting functionality
+- New testing documentation with best practices
+- Enhanced mocking strategies for external services
+
+### Fixed
+- Rate limit test dependencies on external services
+- Jest configuration for proper test isolation
+- Integration issues with @golevelup/ts-jest
+
+### Changed
+- Improved test organization with dedicated setup files
+- Updated testing approach to use mock services instead of real connections
+
+## [0.2.0] - Previous version
+# Changelog
+
 All notable changes to the graph-analytics-service will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),

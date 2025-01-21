@@ -1,30 +1,23 @@
-import { Test, TestingModule } from '@nestjs/testing';
+/**
+ * @jest-environment node
+ * @jest-setup ../../test/rate-limit-setup.ts
+ */
+
 import { ExecutionContext, HttpException } from '@nestjs/common';
 import { RateLimitGuard } from './rate-limit.guard';
 import { RateLimitService } from './rate-limit.service';
 import { createMock } from '@golevelup/ts-jest';
 import { User } from '../auth/interfaces/user.interface';
+import { app } from '../../test/rate-limit-setup';
 
 describe('RateLimitGuard', () => {
   let guard: RateLimitGuard;
   let rateLimitService: RateLimitService;
 
   beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        RateLimitGuard,
-        {
-          provide: RateLimitService,
-          useValue: {
-            isRateLimited: jest.fn(),
-            getRemainingRequests: jest.fn(),
-          },
-        },
-      ],
-    }).compile();
-
-    guard = module.get<RateLimitGuard>(RateLimitGuard);
-    rateLimitService = module.get<RateLimitService>(RateLimitService);
+    guard = app.get<RateLimitGuard>(RateLimitGuard);
+    rateLimitService = app.get<RateLimitService>(RateLimitService);
+    jest.clearAllMocks();
   });
 
   it('should allow request when rate limit is not exceeded', async () => {
