@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  llm-service-test:
+    build:
+      context: .
+      target: builder
+    container_name: llm-service-test
+    command: npm run test
+    environment:
+      - NODE_ENV=test
+      - REDIS_HOST=redis-test
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - REDIS_DB=1
+      - OPENROUTER_API_KEY=test-key
+      - SITE_URL=http://localhost:3000
+      - SITE_NAME=VAIM2 Test
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      redis-test:
+        condition: service_healthy
+    networks:
+      - llm-test-network
+
+  llm-service-e2e:
+    build:
+      context: .
+      target: builder
+    container_name: llm-service-e2e
+    command: npm run test:e2e
+    environment:
+      - NODE_ENV=test
+      - REDIS_HOST=redis-test
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - REDIS_DB=2
+      - OPENROUTER_API_KEY=test-key
+      - SITE_URL=http://localhost:3000
+      - SITE_NAME=VAIM2 E2E
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      redis-test:
+        condition: service_healthy
+    networks:
+      - llm-test-network
+
+  redis-test:
+    image: redis:7-alpine
+    container_name: llm-redis-test
+    command: redis-server --appendonly no --save ""
+    networks:
+      - llm-test-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+networks:
+  llm-test-network:
+    driver: bridge
