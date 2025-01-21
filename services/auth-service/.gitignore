@@ -3,7 +3,10 @@ node_modules/
 
 # Environment files
 .env
-.env.local
+.env.*
+!.env.example
+!.env.production
+!.env.test
 
 # Build artifacts
 dist/

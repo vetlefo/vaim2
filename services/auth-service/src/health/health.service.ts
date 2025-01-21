@@ -18,13 +18,19 @@ export class HealthService {
       },
     };
 
+    // Get configurations
+    const [dbConfig, neo4jConfig] = await Promise.all([
+      this.configService.dbConfig(),
+      this.configService.neo4jConfig(),
+    ]);
+
     // Check PostgreSQL
     const pgClient = new Client({
-      host: this.configService.dbConfig.host,
-      port: this.configService.dbConfig.port,
-      user: this.configService.dbConfig.user,
-      password: this.configService.dbConfig.password,
-      database: this.configService.dbConfig.name,
+      host: dbConfig.host,
+      port: dbConfig.port,
+      user: dbConfig.user,
+      password: dbConfig.password,
+      database: dbConfig.name,
     });
 
     try {
@@ -40,10 +46,10 @@ export class HealthService {
     // Check Neo4j
     try {
       const neo4jDriver = neo4j.driver(
-        this.configService.neo4jConfig.uri,
+        neo4jConfig.uri,
         neo4j.auth.basic(
-          this.configService.neo4jConfig.user,
-          this.configService.neo4jConfig.password
+          neo4jConfig.user,
+          neo4jConfig.password
         )
       );
 
