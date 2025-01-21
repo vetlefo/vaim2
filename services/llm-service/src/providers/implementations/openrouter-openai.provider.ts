@@ -28,7 +28,7 @@ export default class OpenRouterOpenAIProvider implements LLMProvider {
         'X-Title': config.siteName || '',
       },
       defaultQuery: {
-        timeout: this.timeout,
+        timeout: this.timeout.toString(),
       },
       maxRetries: this.maxRetries,
     });

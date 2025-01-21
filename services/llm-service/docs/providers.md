@@ -66,6 +66,62 @@ interface StreamResponse {
 }
 ```
 
+## Available Providers
+
+### OpenRouter Provider
+
+OpenRouter is a unified API that provides access to various LLM models. We offer two implementations:
+
+1. Direct API Implementation (`OpenRouterProvider`)
+   - Uses OpenRouter's native API
+   - Supports all OpenRouter models
+   - Configuration:
+     ```typescript
+     interface OpenRouterConfig {
+       apiKey: string;
+       defaultModel?: string;
+       siteUrl?: string;  // HTTP-Referer header
+       siteName?: string; // X-Title header
+       maxRetries?: number;
+       timeout?: number;
+     }
+     ```
+
+2. OpenAI-Compatible Implementation (`OpenRouterOpenAIProvider`)
+   - Uses OpenRouter's OpenAI-compatible endpoint
+   - Compatible with OpenAI client libraries
+   - Supports streaming responses
+   - Configuration:
+     ```typescript
+     interface OpenRouterConfig {
+       apiKey: string;
+       defaultModel?: string;
+       baseUrl?: string;
+       siteUrl?: string;
+       siteName?: string;
+       maxRetries?: number;
+       timeout?: number;
+     }
+     ```
+
+#### Environment Variables
+```env
+OPENROUTER_API_KEY=sk-or-v1-...
+OPENROUTER_DEFAULT_MODEL=deepseek/deepseek-r1
+OPENROUTER_SITE_URL=https://your-site.com
+OPENROUTER_SITE_NAME=Your Site Name
+OPENROUTER_MAX_RETRIES=3
+OPENROUTER_TIMEOUT=30000
+```
+
+#### Available Models
+- deepseek/deepseek-r1
+- deepseek/deepseek-chat
+- anthropic/claude-3-sonnet
+- anthropic/claude-2
+- meta/llama2-70b
+- google/palm-2
+
 ## Implementation Steps
 
 1. Create Provider Class
@@ -151,6 +207,7 @@ export enum LLMErrorType {
   CONTEXT_LENGTH = 'CONTEXT_LENGTH',
   INVALID_REQUEST = 'INVALID_REQUEST',
   TIMEOUT = 'TIMEOUT',
+  MODEL_NOT_FOUND = 'MODEL_NOT_FOUND',
 }
 ```
 
