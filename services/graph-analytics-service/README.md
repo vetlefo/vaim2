@@ -130,3 +130,13 @@ docker run -p 3002:3002 --env-file .env graph-analytics-service
 ## License
 
 This project is proprietary and confidential.
+
+## Documentation
+
+- [Data Pipeline](docs/data-pipeline.md) - Data processing pipeline documentation
+- [Testing Guide](docs/testing.md) - Testing procedures and guidelines
+
+## Related Documentation
+
+- [Docker Setup](../../tools/docker.md) - Global Docker configuration
+- [CI/CD Pipeline](../../workflows/cicd.md) - Deployment workflow

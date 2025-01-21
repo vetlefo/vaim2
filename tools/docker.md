@@ -365,5 +365,17 @@ docker-compose -f docker-compose.test.yml logs [service-name]
 6. Proper resource limits
 
 ## Related Documentation
+
+### Service-Specific Docker Documentation
+- [Auth Service Docker Setup](../services/auth-service/docs/implementation.md#docker-setup)
+- [Graph Analytics Service Docker Setup](../services/graph-analytics-service/docs/data-pipeline.md#docker-configuration)
+- [LLM Service Docker Setup](../services/llm-service/docs/configuration.md#docker-setup)
+
+### General Documentation
 - [CI/CD Pipeline](../workflows/cicd.md)
 - [Phase 1 Timeline](../implementation/phase1-timeline.md)
+
+## Service Docker Files
+- Auth Service: [Dockerfile](../services/auth-service/Dockerfile), [docker-compose.yml](../services/auth-service/docker-compose.yml), [docker-compose.test.yml](../services/auth-service/docker-compose.test.yml)
+- Graph Analytics Service: [Dockerfile](../services/graph-analytics-service/Dockerfile), [docker-compose.test.yml](../services/graph-analytics-service/docker-compose.test.yml)
+- LLM Service: [Dockerfile](../services/llm-service/Dockerfile), [docker-compose.yml](../services/llm-service/docker-compose.yml), [docker-compose.test.yml](../services/llm-service/docker-compose.test.yml)

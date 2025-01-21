@@ -108,3 +108,14 @@ For production deployments:
 6. Implement CI/CD pipeline with security checks
 
 For detailed deployment instructions, see [deployment guide](docs/deployment.md).
+
+## Documentation
+
+- [Implementation Details](docs/implementation.md) - Detailed service implementation guide
+- [OAuth2 Implementation](docs/oauth2-implementation.md) - OAuth2 authentication flow documentation
+- [Secrets Management](docs/secrets-management.md) - Security and secrets handling guide
+
+## Related Documentation
+
+- [Docker Setup](../tools/docker.md) - Global Docker configuration
+- [CI/CD Pipeline](../workflows/cicd.md) - Deployment workflow
