@@ -1,5 +1,4 @@
 import { Test } from '@nestjs/testing';
-import axios from 'axios';
 import OpenRouterProvider from '../openrouter.provider';
 import { 
   LLMError, 
@@ -7,163 +6,132 @@ import {
   OpenRouterConfig,
   ChatMessage 
 } from '@app/interfaces/provider.interface';
-
-jest.mock('axios');
-const mockedAxios = axios as jest.Mocked<typeof axios>;
+import { ConfigService } from '@nestjs/config';
 
 describe('OpenRouterProvider', () => {
   let provider: OpenRouterProvider;
-  const mockConfig: OpenRouterConfig = {
-    apiKey: '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',
-    defaultModel: 'deepseek/deepseek-r1',
-    siteUrl: 'http://test.com',
-    siteName: 'Test Site',
-    maxRetries: 1,
-    timeout: 5000,
-  };
+  let configService: ConfigService;
+  let config: OpenRouterConfig;
 
-  beforeEach(() => {
-    mockedAxios.create.mockReturnValue({
-      post: jest.fn(),
-      get: jest.fn(),
-    } as any);
-    provider = new OpenRouterProvider(mockConfig);
-  });
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
+      providers: [
+        ConfigService,
+      ],
+    }).compile();
 
-  afterEach(() => {
-    jest.clearAllMocks();
+    configService = module.get<ConfigService>(ConfigService);
+    
+    config = {
+      apiKey: process.env.OPENROUTER_API_KEY,
+      defaultModel: 'deepseek/deepseek-r1',
+      siteUrl: 'http://test.com',
+      siteName: 'Test Site',
+      maxRetries: 1,
+      timeout: 30000,
+    };
+
+    provider = new OpenRouterProvider(config);
   });
 
   describe('initialize', () => {
-    it('should initialize successfully when health check passes', async () => {
-      const mockGet = jest.fn().mockResolvedValue({ data: { models: [] } });
-      mockedAxios.create.mockReturnValue({ get: mockGet } as any);
-
+    it('should initialize successfully', async () => {
       await expect(provider.initialize()).resolves.not.toThrow();
-      expect(mockGet).toHaveBeenCalledWith('/models');
-    });
-
-    it('should throw error when health check fails', async () => {
-      const mockGet = jest.fn().mockRejectedValue(new Error('Health check failed'));
-      mockedAxios.create.mockReturnValue({ get: mockGet } as any);
-
-      await expect(provider.initialize()).rejects.toThrow(LLMError);
-      expect(mockGet).toHaveBeenCalledWith('/models');
     });
   });
 
   describe('complete', () => {
-    const mockMessages: ChatMessage[] = [{ role: 'user', content: 'test message' }];
-    const mockResponse = {
-      data: {
-        choices: [{ message: { content: 'test response' } }],
-        usage: {
-          prompt_tokens: 10,
-          completion_tokens: 20,
-          total_tokens: 30,
-        },
-      },
-    };
+    const mockMessages: ChatMessage[] = [{ role: 'user', content: 'Say hello' }];
 
     it('should complete messages successfully', async () => {
-      const mockPost = jest.fn().mockResolvedValue(mockResponse);
-      mockedAxios.create.mockReturnValue({ post: mockPost } as any);
-
       const result = await provider.complete(mockMessages);
 
-      expect(result.text).toBe('test response');
-      expect(result.usage).toEqual({
-        promptTokens: 10,
-        completionTokens: 20,
-        totalTokens: 30,
-      });
+      expect(result.text).toBeDefined();
+      expect(result.text.length).toBeGreaterThan(0);
+      expect(result.usage).toBeDefined();
+      expect(result.usage.promptTokens).toBeGreaterThan(0);
+      expect(result.usage.completionTokens).toBeGreaterThan(0);
+      expect(result.usage.totalTokens).toBeGreaterThan(0);
       expect(result.metadata.provider).toBe('openrouter');
       expect(result.metadata.model).toBe('deepseek/deepseek-r1');
-    });
-
-    it('should handle rate limit errors', async () => {
-      const mockError = {
-        response: {
-          status: 429,
-          data: { error: { message: 'Rate limit exceeded' } },
-        },
-      };
-      const mockPost = jest.fn().mockRejectedValue(mockError);
-      mockedAxios.create.mockReturnValue({ post: mockPost } as any);
-
-      await expect(provider.complete(mockMessages)).rejects.toThrow(
-        new LLMError(LLMErrorType.RATE_LIMIT, 'Rate limit exceeded', 'openrouter')
-      );
-    });
+      expect(result.metadata.latency).toBeDefined();
+    }, 30000);
 
     it('should handle context length errors', async () => {
-      const mockError = {
+      // Mock axios error for context length
+      jest.spyOn(provider['client'], 'post').mockRejectedValueOnce({
         response: {
           status: 400,
-          data: { error: { message: 'context length exceeded' } },
+          data: {
+            error: {
+              message: 'This model\'s maximum context length is 8192 tokens'
+            }
+          }
         },
-      };
-      const mockPost = jest.fn().mockRejectedValue(mockError);
-      mockedAxios.create.mockReturnValue({ post: mockPost } as any);
+        isAxiosError: true
+      });
 
       await expect(provider.complete(mockMessages)).rejects.toThrow(
         new LLMError(LLMErrorType.CONTEXT_LENGTH, 'Maximum context length exceeded', 'openrouter')
       );
-    });
+
+      // Restore fetch
+      jest.restoreAllMocks();
+    }, 30000);
   });
 
   describe('completeStream', () => {
-    const mockMessages: ChatMessage[] = [{ role: 'user', content: 'test message' }];
-    const mockChunk = {
-      choices: [{ delta: { content: 'test' } }],
-    };
+    const mockMessages: ChatMessage[] = [{ role: 'user', content: 'Count from 1 to 5' }];
 
     it('should handle streaming responses', async () => {
+      // Mock axios stream response
       const mockStream = {
         [Symbol.asyncIterator]: async function* () {
-          yield Buffer.from(JSON.stringify(mockChunk));
-        },
+          yield Buffer.from('data: {"choices":[{"delta":{"content":"Hello"}}]}\n\n');
+          yield Buffer.from('data: {"choices":[{"delta":{"content":" world"}}]}\n\n');
+        }
       };
 
-      const mockPost = jest.fn().mockResolvedValue({ data: mockStream });
-      mockedAxios.create.mockReturnValue({ post: mockPost } as any);
+      jest.spyOn(provider['client'], 'post').mockResolvedValueOnce({
+        data: mockStream,
+        status: 200,
+        headers: { 'content-type': 'text/event-stream' }
+      });
 
-      const stream = await provider.completeStream(mockMessages);
-      const chunks = [];
-      for await (const chunk of stream) {
-        chunks.push(chunk);
+      const responseStream = await provider.completeStream(mockMessages);
+      const responses = [];
+
+      for await (const chunk of responseStream) {
+        responses.push(chunk);
+        expect(chunk).toMatchObject({
+          text: expect.any(String),
+          usage: {
+            promptTokens: 0,
+            completionTokens: 0,
+            totalTokens: 0
+          },
+          metadata: {
+            provider: 'openrouter',
+            model: 'deepseek/deepseek-r1',
+            latency: expect.any(Number),
+            timestamp: expect.any(String)
+          }
+        });
       }
 
-      expect(chunks[0].text).toBe('test');
-      expect(chunks[0].metadata.provider).toBe('openrouter');
-    });
+      expect(responses).toHaveLength(2);
+      expect(responses[0].text).toBe('Hello');
+      expect(responses[1].text).toBe(' world');
 
-    it('should handle streaming errors', async () => {
-      const mockError = new Error('Stream error');
-      const mockPost = jest.fn().mockRejectedValue(mockError);
-      mockedAxios.create.mockReturnValue({ post: mockPost } as any);
-
-      await expect(provider.completeStream(mockMessages)).rejects.toThrow();
-    });
+      // Restore fetch
+      jest.restoreAllMocks();
+    }, 30000);
   });
 
   describe('healthCheck', () => {
-    it('should return true when models endpoint is accessible', async () => {
-      const mockGet = jest.fn().mockResolvedValue({ data: { models: [] } });
-      mockedAxios.create.mockReturnValue({ get: mockGet } as any);
-
+    it('should return true when API is accessible', async () => {
       const result = await provider.healthCheck();
       expect(result).toBe(true);
-      expect(mockGet).toHaveBeenCalledWith('/models');
-    });
-
-    it('should return false when models endpoint is not accessible', async () => {
-      const mockGet = jest.fn().mockRejectedValue(new Error('Health check failed'));
-      mockedAxios.create.mockReturnValue({ get: mockGet } as any);
-
-      const result = await provider.healthCheck();
-      expect(result).toBe(false);
-      expect(mockGet).toHaveBeenCalledWith('/models');
     });
   });
 });

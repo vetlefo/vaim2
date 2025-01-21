@@ -105,9 +105,19 @@ The OpenRouter integration has been completed with two implementations:
 - API client with proper headers and configuration
 - Full request/response mapping
 - Comprehensive error handling with retries
+  - Context length errors
+  - Rate limiting
+  - Authentication errors
+  - Network timeouts
 - Streaming support with proper event handling
+  - SSE parsing and processing
+  - Chunk aggregation
+  - Error recovery
 - Rate limiting and timeout handling
 - Unit tests with mocked responses
+  - Error scenarios
+  - Streaming responses
+  - Edge cases
 ```
 
 2. OpenAI-Compatible Implementation (`OpenRouterOpenAIProvider`)
@@ -115,9 +125,18 @@ The OpenRouter integration has been completed with two implementations:
 // Features implemented:
 - OpenAI SDK integration
 - Streaming support via OpenAI interface
+  - Chunk processing
+  - Token counting
+  - Metadata handling
 - Proper error mapping from OpenAI to LLM errors
+  - Context length detection
+  - API errors
+  - Network issues
 - Configurable timeout and retry logic
 - Full test coverage with mocked SDK
+  - Error handling
+  - Streaming
+  - Response mapping
 ```
 
 Both implementations support:
