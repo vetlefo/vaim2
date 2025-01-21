@@ -214,4 +214,115 @@ export class Neo4jService implements OnApplicationShutdown {
       await session.close();
     }
   }
+
+  // Data Retention Methods
+
+  async enforceDataRetention(cutoffDate: Date): Promise<{
+    deletedNodes: number;
+    deletedRelationships: number;
+  }> {
+    const session = this.getSession();
+    try {
+      // First, count the nodes and relationships that will be deleted
+      const countResult = await session.run(
+        `
+        MATCH (n)
+        WHERE n.createdAt < $cutoffDate
+        WITH count(n) as nodeCount
+        MATCH (n)-[r]-()
+        WHERE n.createdAt < $cutoffDate OR r.createdAt < $cutoffDate
+        RETURN nodeCount, count(DISTINCT r) as relCount
+        `,
+        { cutoffDate: cutoffDate.toISOString() }
+      );
+
+      const nodesToDelete = countResult.records[0]?.get('nodeCount').toNumber() || 0;
+      const relsToDelete = countResult.records[0]?.get('relCount').toNumber() || 0;
+
+      // Then perform the actual deletion
+      await session.run(
+        `
+        MATCH (n)
+        WHERE n.createdAt < $cutoffDate
+        WITH n
+        LIMIT 1000
+        DETACH DELETE n
+        `,
+        { cutoffDate: cutoffDate.toISOString() }
+      );
+
+      return {
+        deletedNodes: nodesToDelete,
+        deletedRelationships: relsToDelete,
+      };
+    } finally {
+      await session.close();
+    }
+  }
+
+  async getDataRetentionStats(): Promise<{
+    totalNodes: number;
+    totalRelationships: number;
+    oldestNodeDate: string;
+    oldestRelationshipDate: string;
+  }> {
+    const session = this.getSession();
+    try {
+      const result = await session.run(`
+        MATCH (n)
+        WITH count(n) as nodeCount, min(n.createdAt) as oldestNode
+        MATCH ()-[r]->()
+        RETURN
+          nodeCount,
+          count(r) as relCount,
+          oldestNode,
+          min(r.createdAt) as oldestRel
+      `);
+
+      const record = result.records[0];
+      return {
+        totalNodes: record.get('nodeCount').toNumber(),
+        totalRelationships: record.get('relCount').toNumber(),
+        oldestNodeDate: record.get('oldestNode'),
+        oldestRelationshipDate: record.get('oldestRel'),
+      };
+    } finally {
+      await session.close();
+    }
+  }
+
+  async archiveOldData(cutoffDate: Date, archivePath: string): Promise<{
+    archivedNodes: number;
+    archivedRelationships: number;
+  }> {
+    const session = this.getSession();
+    try {
+      // Export old data to CSV before deletion
+      const result = await session.run(
+        `
+        CALL apoc.export.csv.query(
+          "MATCH (n) WHERE n.createdAt < $cutoffDate
+           OPTIONAL MATCH (n)-[r]-()
+           WHERE r.createdAt < $cutoffDate
+           RETURN n, r",
+          $archivePath,
+          {params: {cutoffDate: $cutoffDate}}
+        )
+        RETURN count(n) as nodes, count(r) as rels
+        `,
+        {
+          cutoffDate: cutoffDate.toISOString(),
+          archivePath,
+        }
+      );
+
+      const record = result.records[0];
+      return {
+        archivedNodes: record.get('nodes').toNumber(),
+        archivedRelationships: record.get('rels').toNumber(),
+      };
+    } finally {
+      await session.close();
+    }
+  }
 }

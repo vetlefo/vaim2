@@ -106,6 +106,12 @@ export class ConfigService {
     return this.configService.get<number>('METRICS_PORT', 9464);
   }
 
+  // Helper method to get number values from config
+  getNumber(key: string, defaultValue?: number): number {
+    const value = this.configService.get<number>(key);
+    return value ?? defaultValue;
+  }
+
   // Helper method to validate required configuration
   validateConfig(): void {
     const requiredEnvVars = [
