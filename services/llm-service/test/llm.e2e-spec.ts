@@ -33,6 +33,7 @@ describe('LLM Service (e2e)', () => {
 
   describe('/llm/complete (POST)', () => {
     it('should return a completion response', async () => {
+      jest.retryTimes(3);
       const response = await request(app.getHttpServer())
         .post('/llm/complete')
         .send({
@@ -122,6 +123,7 @@ describe('LLM Service (e2e)', () => {
 
   describe('/llm/complete/stream (POST)', () => {
     it('should stream completion responses', async () => {
+      jest.retryTimes(3);
       const response = await request(app.getHttpServer())
         .post('/llm/complete/stream')
         .send({
@@ -200,6 +202,7 @@ describe('LLM Service (e2e)', () => {
 
   describe('GraphQL Endpoints', () => {
     it('should handle completion query', async () => {
+      jest.retryTimes(3);
       const query = `
         query {
           complete(input: {

@@ -154,6 +154,16 @@ npm run test:integration
 npm run test:e2e
 ```
 
+### Test Retry Strategy
+The service implements test-level retries for E2E tests that interact with external services to handle flaky tests caused by network conditions or rate limiting:
+
+- Tests with external API calls use `jest.retryTimes(3)`
+- Retried tests include:
+  - LLM completion endpoints
+  - Streaming completion endpoints
+  - GraphQL completion queries
+- Deterministic tests (e.g., rate limiting, caching) do not use retries
+
 ### Test Coverage Requirements
 - Unit test coverage: >90%
 - Integration test coverage: >80%

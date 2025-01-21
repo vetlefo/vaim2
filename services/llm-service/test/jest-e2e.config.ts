@@ -18,8 +18,6 @@ const config: Config.InitialOptions = {
       tsconfig: '<rootDir>/tsconfig.json',
     },
   },
-  // Retry failed tests
-  retry: 3,
   verbose: true,
   detectOpenHandles: true,
   forceExit: true,
