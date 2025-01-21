@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { RedisService } from '../redis/redis.service';
 import { ConfigService } from '@nestjs/config';
+import Redis from 'ioredis';
 
 export interface RateLimitConfig {
   windowMs: number;
@@ -60,21 +61,29 @@ export class RateLimitService {
     const now = Date.now();
     const windowStart = now - config.windowMs;
 
-    const multi = this.redisService.getClient().multi();
-    
+    const pipeline = this.redisService.getClient().pipeline();
+
     // Remove old requests outside the current window
-    multi.zremrangebyscore(key, 0, windowStart);
+    pipeline.zremrangebyscore(key, 0, windowStart);
     // Count requests in current window
-    multi.zcount(key, windowStart, now);
+    pipeline.zcount(key, windowStart, now);
     // Add current request
-    multi.zadd(key, now, `${now}`);
+    pipeline.zadd(key, now, `${now}`);
     // Set expiry to ensure cleanup
-    multi.expire(key, Math.ceil(config.windowMs / 1000));
+    pipeline.expire(key, Math.ceil(config.windowMs / 1000));
 
-    const results = await multi.exec();
-    const requestCount = results[1][1] as number;
+    const results = await pipeline.exec();
+    if (!results) {
+      return false;
+    }
 
-    return requestCount >= config.maxRequests;
+    // Get count from results, defaulting to 0 if there's an error
+    const [error, count] = results[1] || [null, 0];
+    if (error) {
+      return false;
+    }
+
+    return Number(count) >= config.maxRequests;
   }
 
   async getRemainingRequests(userId: string, endpoint: string): Promise<number> {
@@ -84,8 +93,9 @@ export class RateLimitService {
     const now = Date.now();
     const windowStart = now - config.windowMs;
 
-    await this.redisService.getClient().zremrangebyscore(key, 0, windowStart);
-    const requestCount = await this.redisService.getClient().zcount(key, windowStart, now);
+    const client = this.redisService.getClient();
+    await client.zremrangebyscore(key, 0, windowStart);
+    const requestCount = await client.zcount(key, windowStart, now);
 
     return Math.max(0, config.maxRequests - requestCount);
   }
