@@ -4,78 +4,72 @@
 
 The LLM Service implements two different approaches for OpenRouter integration:
 1. Direct API integration using axios
-2. OpenAI SDK integration
-
-### OpenRouter Direct Provider
-
-The direct provider implementation uses axios to communicate directly with the OpenRouter API.
-
-#### Features
-- Direct HTTP requests to OpenRouter API
-- Custom error handling and mapping
-- Built-in retry mechanism
-- Streaming support
-- Request timeout handling
-- Rate limit handling
-
-#### Implementation
-
-```typescript
-class OpenRouterProvider implements LLMProvider {
-  private client: AxiosInstance;
-  private readonly defaultModel: string;
-  private readonly maxRetries: number;
-  private readonly timeout: number;
-
-  constructor(config: OpenRouterConfig) {
-    // Initialize with configuration
-  }
-
-  async complete(messages: ChatMessage[], options?: LLMRequestOptions): Promise<LLMResponse>;
-  async completeStream(messages: ChatMessage[], options?: LLMRequestOptions): Promise<AsyncIterableIterator<LLMResponse>>;
-  async healthCheck(): Promise<boolean>;
-}
-```
-
-#### Error Handling
-- Authentication errors (401)
-- Rate limiting (429)
-- Context length exceeded (400)
-- Model not found (404)
-- Timeouts (408)
-- Network errors
-- Unexpected errors
+2. OpenAI SDK integration with Parameters API support
 
 ### OpenRouter OpenAI Provider
 
-The OpenAI SDK provider uses the official OpenAI SDK configured for OpenRouter.
+The OpenAI SDK provider uses the official OpenAI SDK configured for OpenRouter, enhanced with dynamic parameter optimization through the OpenRouter Parameters API.
 
 #### Features
 - OpenAI SDK integration
-- Automatic retries
+- Automatic parameter optimization via Parameters API
+- Dynamic model-specific parameter fetching
+- Parameter caching for performance
 - Type-safe requests
 - Built-in error handling
 - Streaming support
 - Request timeout handling
+- Default DeepSeek-R1 model support
+- Support for Claude-3.5-Sonnet through OpenRouter
 
 #### Implementation
 
 ```typescript
+interface ModelParameters {
+  model: string;
+  supported_parameters: string[];
+  temperature_p50: number;
+  top_p_p50: number;
+  frequency_penalty_p50: number;
+  presence_penalty_p50: number;
+  top_k_p50?: number;
+  min_p_p50?: number;
+  repetition_penalty_p50?: number;
+  top_a_p50?: number;
+}
+
 class OpenRouterOpenAIProvider implements LLMProvider {
   private client: OpenAI;
   private readonly defaultModel: string;
-  private readonly maxRetries: number;
-  private readonly timeout: number;
+  private modelParameters: Map<string, ModelParameters>;
 
   constructor(config: OpenRouterConfig) {
+    this.defaultModel = config.defaultModel || 'deepseek/deepseek-r1';
     // Initialize with OpenAI SDK configuration
   }
 
+  private async fetchModelParameters(modelId: string): Promise<ModelParameters>;
+  private async getOptimalParameters(modelId: string): Promise<Partial<LLMRequestOptions>>;
   async complete(messages: ChatMessage[], options?: LLMRequestOptions): Promise<LLMResponse>;
   async completeStream(messages: ChatMessage[], options?: LLMRequestOptions): Promise<AsyncIterableIterator<LLMResponse>>;
-  async healthCheck(): Promise<boolean>;
 }
 ```
+
+#### Available Models
+- `deepseek/deepseek-r1` (default)
+- `anthropic/claude-3.5-sonnet`
+
+#### Parameter Optimization
+The provider automatically fetches and uses optimal parameters for each model through the OpenRouter Parameters API:
+
+```typescript
+GET /api/v1/parameters/{author}/{modelSlug}
+```
+
+Response includes:
+- Supported parameters for the model
+- Optimal parameter values based on usage statistics
+- Model-specific parameter ranges and defaults
 
 #### Error Handling
 - APIError handling
@@ -84,6 +78,51 @@ class OpenRouterOpenAIProvider implements LLMProvider {
 - Model availability checks
 - Timeout handling
 - Network error handling
+
+### DeepSeek Integration
+
+The DeepSeek provider implements type-safe integration with DeepSeek's API.
+
+#### Features
+- Type-safe message handling
+- Custom parameter support
+- Reasoning content handling
+- Automatic parameter validation
+- Default parameter values
+- Error handling with retries
+
+#### Implementation
+
+```typescript
+interface DeepseekMessage extends OpenAI.ChatCompletionMessageParam {
+  reasoning_content?: string;
+}
+
+interface DeepseekParameters {
+  temperature?: number;
+  top_p?: number;
+  top_k?: number;
+  frequency_penalty?: number;
+  presence_penalty?: number;
+  repetition_penalty?: number;
+  min_p?: number;
+  top_a?: number;
+}
+
+class DeepseekService {
+  private readonly client: OpenAI;
+  private readonly defaultParameters: DeepseekParameters;
+
+  constructor(config: ConfigService) {
+    // Initialize with configuration
+  }
+
+  async createChatCompletion(
+    messages: Array<DeepseekMessage>,
+    parameters?: Partial<DeepseekParameters>
+  ): Promise<LLMResponse>;
+}
+```
 
 ## Testing Infrastructure
 
@@ -100,6 +139,10 @@ app.post('/api/v1/chat/completions', (req, res) => {
 app.get('/api/v1/models', (req, res) => {
   // Handle model listing
 });
+
+app.get('/api/v1/parameters/:author/:modelSlug', (req, res) => {
+  // Handle parameter queries
+});
 ```
 
 #### Features
@@ -109,15 +152,18 @@ app.get('/api/v1/models', (req, res) => {
 - Authentication validation
 - Streaming response simulation
 - Error scenario simulation
+- Parameter API simulation
 
 ### Test Cases
 
 #### Provider Tests
 ```typescript
 describe('OpenRouterProvider', () => {
-  // Initialization tests
-  it('should initialize successfully');
-  it('should handle initialization failure');
+  // Parameter API tests
+  it('should fetch model parameters successfully');
+  it('should cache model parameters');
+  it('should handle parameter API errors');
+  it('should use optimal parameters');
 
   // Completion tests
   it('should complete messages successfully');
@@ -138,33 +184,13 @@ describe('OpenRouterProvider', () => {
 });
 ```
 
-### Integration Testing
-
-#### Docker Compose Setup
-```yaml
-services:
-  mock-openrouter:
-    build:
-      context: ./test/mock-openrouter
-    ports:
-      - "3001:3000"
-    networks:
-      - llm-test-network
-```
-
-#### Test Environment Variables
-```env
-OPENROUTER_API_KEY=test-key
-OPENROUTER_BASE_URL=http://mock-openrouter:3000/api/v1
-```
-
 ## Provider Configuration
 
-### Direct Provider Configuration
+### OpenRouter Configuration
 ```typescript
 interface OpenRouterConfig {
   apiKey: string;
-  defaultModel?: string;
+  defaultModel?: string; // Defaults to 'deepseek/deepseek-r1'
   baseUrl?: string;
   siteUrl?: string;
   siteName?: string;
@@ -173,19 +199,17 @@ interface OpenRouterConfig {
 }
 ```
 
-### OpenAI SDK Configuration
+### DeepSeek Configuration
 ```typescript
-{
-  baseURL: config.baseUrl || 'https://openrouter.ai/api/v1',
-  apiKey: config.apiKey,
-  defaultHeaders: {
-    'HTTP-Referer': config.siteUrl || '',
-    'X-Title': config.siteName || '',
-  },
-  defaultQuery: {
-    timeout: config.timeout.toString(),
-  },
-  maxRetries: config.maxRetries,
+interface DeepseekParameters {
+  temperature?: number;
+  top_p?: number;
+  top_k?: number;
+  frequency_penalty?: number;
+  presence_penalty?: number;
+  repetition_penalty?: number;
+  min_p?: number;
+  top_a?: number;
 }
 ```
 
@@ -213,6 +237,13 @@ enum LLMErrorType {
 
 ## Performance Considerations
 
+### Parameter Optimization
+- Automatic fetching of optimal parameters
+- Parameter caching with TTL
+- Model-specific defaults
+- Dynamic parameter updates
+- Fallback strategies
+
 ### Retry Strategy
 - Maximum retries configurable
 - Exponential backoff
@@ -226,6 +257,7 @@ enum LLMErrorType {
 - Queue management
 
 ### Caching
+- Parameter caching
 - Response caching
 - Cache key generation
 - TTL management
@@ -238,6 +270,7 @@ enum LLMErrorType {
 - API response time
 - Error rates
 - Rate limit status
+- Parameter API status
 
 ### Metrics
 - Request latency
@@ -245,3 +278,4 @@ enum LLMErrorType {
 - Error rates
 - Cache hit rates
 - Provider availability
+- Parameter optimization effectiveness

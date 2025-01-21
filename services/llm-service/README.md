@@ -12,6 +12,9 @@ The LLM (Large Language Model) service provides a unified interface for accessin
 - Health monitoring
 - Provider fallback
 - Cost tracking
+- Dynamic parameter optimization via OpenRouter Parameters API
+- Model-specific parameter tuning
+- Automatic parameter caching
 
 ## Prerequisites
 
@@ -61,7 +64,6 @@ DEFAULT_MODEL=deepseek/deepseek-r1
 
 # Optional Direct Provider Keys
 DEEPSEEK_API_KEY=
-CLAUDE_API_KEY=
 
 # Performance
 MAX_CONCURRENT_REQUESTS=50
@@ -150,6 +152,29 @@ curl -N http://localhost:3002/api/v1/llm/complete/stream \
   --data-urlencode 'messages=[{"role":"user","content":"What is the meaning of life?"}]'
 ```
 
+### Available Models
+
+- `deepseek/deepseek-r1` (default)
+- `anthropic/claude-3.5-sonnet`
+
+### Parameter Optimization
+
+The service automatically fetches and uses optimal parameters for each model through the OpenRouter Parameters API:
+
+```typescript
+// Example optimal parameters response
+{
+  "temperature_p50": 0.7,
+  "top_p_p50": 0.95,
+  "frequency_penalty_p50": 0.1,
+  "presence_penalty_p50": 0.1,
+  "top_k_p50": 40,
+  "repetition_penalty_p50": 1.1
+}
+```
+
+Parameters are cached and automatically updated to ensure optimal performance.
+
 ## Development
 
 ### Running Tests
@@ -202,6 +227,7 @@ The service exposes metrics for Prometheus:
 - Token usage
 - Provider availability
 - Error rates
+- Parameter optimization effectiveness
 
 ## Documentation
 

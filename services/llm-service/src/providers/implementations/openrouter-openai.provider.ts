@@ -1,4 +1,5 @@
 import { OpenAI } from 'openai';
+import axios from 'axios';
 import {
   LLMProvider,
   LLMRequestOptions,
@@ -9,19 +10,35 @@ import {
   LLMErrorType,
 } from '@app/interfaces/provider.interface';
 
+interface ModelParameters {
+  model: string;
+  supported_parameters: string[];
+  temperature_p50: number;
+  top_p_p50: number;
+  frequency_penalty_p50: number;
+  presence_penalty_p50: number;
+  top_k_p50?: number;
+  min_p_p50?: number;
+  repetition_penalty_p50?: number;
+  top_a_p50?: number;
+}
+
 export default class OpenRouterOpenAIProvider implements LLMProvider {
   private client: OpenAI;
   private readonly defaultModel: string;
   private readonly maxRetries: number;
   private readonly timeout: number;
+  private readonly baseURL: string;
+  private modelParameters: Map<string, ModelParameters> = new Map();
 
   constructor(config: OpenRouterConfig) {
     this.defaultModel = config.defaultModel || 'deepseek/deepseek-r1';
     this.maxRetries = config.maxRetries || 3;
     this.timeout = config.timeout || 30000;
+    this.baseURL = config.baseUrl || 'https://openrouter.ai/api/v1';
 
     this.client = new OpenAI({
-      baseURL: config.baseUrl || 'https://openrouter.ai/api/v1',
+      baseURL: this.baseURL,
       apiKey: config.apiKey,
       defaultHeaders: {
         'HTTP-Referer': config.siteUrl || '',
@@ -37,6 +54,8 @@ export default class OpenRouterOpenAIProvider implements LLMProvider {
   async initialize(): Promise<void> {
     try {
       await this.healthCheck();
+      // Pre-fetch parameters for default model
+      await this.fetchModelParameters(this.defaultModel);
     } catch (error) {
       throw new LLMError(
         LLMErrorType.PROVIDER_ERROR,
@@ -47,22 +66,64 @@ export default class OpenRouterOpenAIProvider implements LLMProvider {
     }
   }
 
+  private async fetchModelParameters(modelId: string): Promise<ModelParameters> {
+    if (this.modelParameters.has(modelId)) {
+      return this.modelParameters.get(modelId)!;
+    }
+
+    const [author, modelSlug] = modelId.split('/');
+    try {
+      const response = await axios.get(
+        `${this.baseURL}/parameters/${author}/${modelSlug}`,
+        {
+          headers: {
+            'accept': 'application/json',
+            'authorization': `Bearer ${this.client.apiKey}`,
+          },
+        }
+      );
+
+      const parameters = response.data.data;
+      this.modelParameters.set(modelId, parameters);
+      return parameters;
+    } catch (error) {
+      throw new LLMError(
+        LLMErrorType.PROVIDER_ERROR,
+        `Failed to fetch parameters for model ${modelId}`,
+        'openrouter',
+        error
+      );
+    }
+  }
+
+  private async getOptimalParameters(modelId: string): Promise<Partial<LLMRequestOptions>> {
+    const parameters = await this.fetchModelParameters(modelId);
+    return {
+      temperature: parameters.temperature_p50,
+      topP: parameters.top_p_p50,
+      frequencyPenalty: parameters.frequency_penalty_p50,
+      presencePenalty: parameters.presence_penalty_p50,
+      ...(parameters.top_k_p50 && { topK: parameters.top_k_p50 }),
+      ...(parameters.min_p_p50 && { minP: parameters.min_p_p50 }),
+      ...(parameters.repetition_penalty_p50 && { repetitionPenalty: parameters.repetition_penalty_p50 }),
+      ...(parameters.top_a_p50 && { topA: parameters.top_a_p50 }),
+    };
+  }
+
   async complete(messages: ChatMessage[], options?: LLMRequestOptions): Promise<LLMResponse> {
     const startTime = Date.now();
+    const modelId = options?.model || this.defaultModel;
 
     try {
+      const optimalParams = await this.getOptimalParameters(modelId);
       const completion = await this.client.chat.completions.create({
-        model: options?.model || this.defaultModel,
+        model: modelId,
         messages: messages.map(msg => ({
           role: msg.role,
           content: msg.content,
         })),
-        temperature: options?.temperature || 1.0,
-        max_tokens: options?.maxTokens || 4096,
-        top_p: options?.topP || 1.0,
-        frequency_penalty: options?.frequencyPenalty || 0.0,
-        presence_penalty: options?.presencePenalty || 0.0,
-        stop: options?.stop || [],
+        ...optimalParams,
+        ...options,
         stream: false,
       });
 
@@ -74,7 +135,7 @@ export default class OpenRouterOpenAIProvider implements LLMProvider {
           totalTokens: completion.usage?.total_tokens || 0,
         },
         metadata: {
-          model: options?.model || this.defaultModel,
+          model: modelId,
           provider: 'openrouter',
           latency: Date.now() - startTime,
           timestamp: new Date().toISOString(),
@@ -90,24 +151,22 @@ export default class OpenRouterOpenAIProvider implements LLMProvider {
     options?: LLMRequestOptions
   ): Promise<AsyncIterableIterator<LLMResponse>> {
     const startTime = Date.now();
+    const modelId = options?.model || this.defaultModel;
 
     try {
+      const optimalParams = await this.getOptimalParameters(modelId);
       const stream = await this.client.chat.completions.create({
-        model: options?.model || this.defaultModel,
+        model: modelId,
         messages: messages.map(msg => ({
           role: msg.role,
           content: msg.content,
         })),
-        temperature: options?.temperature || 0.7,
-        max_tokens: options?.maxTokens || 4096,
-        top_p: options?.topP || 1,
-        frequency_penalty: options?.frequencyPenalty,
-        presence_penalty: options?.presencePenalty,
-        stop: options?.stop,
+        ...optimalParams,
+        ...options,
         stream: true,
       });
 
-      return this.processStream(stream, startTime, options?.model || this.defaultModel);
+      return this.processStream(stream, startTime, modelId);
     } catch (error) {
       throw this.handleError(error);
     }

@@ -44,7 +44,12 @@ This file centralizes references to all major documentation in the repository.
 - [Implementation Details](services/llm-service/docs/implementation.md) - Implementation specifics
 - [Next Steps](services/llm-service/docs/next-steps.md) - Future development plans
 - [Providers Guide](services/llm-service/docs/providers.md) - LLM provider integration details
+  - Model configuration and Parameters API
+  - DeepSeek-R1 and Claude-3.5-Sonnet integration
+  - Dynamic parameter optimization
+  - Provider-specific features and capabilities
 - [Rate Limiting](services/llm-service/docs/rate-limiting.md) - Rate limiting implementation
+- [Changelog](services/llm-service/CHANGELOG.md) - Version history and updates
 
 ## Tools
 - [Docker Setup](tools/docker.md) - Docker configuration and usage guide
