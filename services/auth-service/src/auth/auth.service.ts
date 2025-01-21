@@ -8,6 +8,7 @@ import { LoginDto } from './dto/login.dto';
 import { ValidatedUser } from './interfaces/validated-user.interface';
 import { RedisService } from '../redis/redis.service';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { MappedProfile, OAuth2Tokens } from './interfaces/provider.interface';
 
 interface TokenPayload {
   sub: string;
@@ -139,6 +140,65 @@ export class AuthService {
     return {
       access_token: accessToken,
       refresh_token: refreshToken,
+    };
+  }
+
+  async findOrCreateOAuth2User(
+    provider: string,
+    profile: MappedProfile,
+    tokens: OAuth2Tokens,
+  ): Promise<{ access_token: string; refresh_token: string; user: ValidatedUser }> {
+    // Try to find existing user by provider and providerId
+    let user = await this.usersService.findByProviderData(provider, profile.providerId);
+
+    if (!user) {
+      // Create new user if not found
+      user = await this.usersService.create({
+        email: profile.email,
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        picture: profile.picture,
+        provider,
+        providerId: profile.providerId,
+        providerData: profile.providerData,
+        lastLogin: new Date(),
+      });
+    } else {
+      // Update existing user's provider data and last login
+      await this.usersService.update(user.id, {
+        firstName: profile.firstName || user.firstName,
+        lastName: profile.lastName || user.lastName,
+        picture: profile.picture || user.picture,
+        providerData: profile.providerData,
+        lastLogin: new Date(),
+      });
+    }
+
+    // Generate tokens
+    const payload = {
+      sub: user.id,
+      email: user.email,
+    };
+
+    const { accessToken, refreshToken } = this.generateTokens(payload);
+
+    // Store refresh token
+    const decoded = this.jwtService.decode(refreshToken) as TokenPayload;
+    if (decoded.jti) {
+      const refreshExpiration = parseInt(this.configService.get<string>('REFRESH_TOKEN_EXPIRATION', '7d'));
+      await this.storeRefreshToken(user.id, decoded.jti, refreshExpiration * 24 * 60 * 60);
+    }
+
+    // Store OAuth2 tokens in Redis
+    await this.redisService.storeOAuth2Tokens(user.id, provider, tokens);
+
+    // Remove sensitive data
+    const { password, ...validatedUser } = user;
+
+    return {
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      user: validatedUser,
     };
   }
 

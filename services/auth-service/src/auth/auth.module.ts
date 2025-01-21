@@ -5,7 +5,12 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UsersModule } from '../users/users.module';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
+import { OAuth2Controller } from './controllers/oauth2.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { OAuth2Strategy } from './strategies/oauth2.strategy';
+import { GoogleStrategy } from './strategies/google.strategy';
+import { GitHubStrategy } from './strategies/github.strategy';
+import { ProviderFactory } from './providers/provider.factory';
 import { RedisModule } from '../redis/redis.module';
 
 @Module({
@@ -24,8 +29,15 @@ import { RedisModule } from '../redis/redis.module';
       inject: [ConfigService],
     }),
   ],
-  controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
+  controllers: [AuthController, OAuth2Controller],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    OAuth2Strategy,
+    GoogleStrategy,
+    GitHubStrategy,
+    ProviderFactory
+  ],
   exports: [AuthService],
 })
 export class AuthModule {}

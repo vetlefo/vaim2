@@ -1,99 +1,40 @@
-# Authentication Service Implementation Plan
+# Auth Service Implementation
 
 ## Overview
-This document outlines the step-by-step implementation plan for the authentication service, focusing on OAuth2 and JWT token handling.
+The authentication service provides secure user authentication and authorization through multiple methods:
+- Local authentication (username/password)
+- OAuth2 authentication (Google, GitHub)
+- JWT-based token management
+- Secure refresh token rotation
 
-## Current Status
-- Basic NestJS service structure ✓
-- Health check endpoints ✓
-- Configuration module ✓
-- Database connection setup (TypeORM + PostgreSQL) ✓
-- User management implementation ✓
-  - User entity ✓
-  - User DTOs ✓
-  - User service ✓
-  - User controller ✓
-  - User module ✓
-- Basic authorization setup ✓
-  - Role decorator ✓
-  - JWT guard ✓
-  - Roles guard ✓
-- Authentication Module Implementation ✓
-  - Auth module structure ✓
-  - JWT strategy ✓
-  - Auth service with login functionality ✓
-  - Auth controller with login endpoint ✓
-  - Redis integration for token blacklisting ✓
-  - Logout functionality with token invalidation ✓
-  - Token refresh mechanism ✓
-  - Refresh token rotation ✓
+## Components
 
-## Token Management Implementation
+### Core Authentication
+- JWT-based token generation and validation
+- Secure password hashing with bcrypt
+- Redis-based token blacklisting
+- Refresh token rotation for enhanced security
 
-### Token Blacklisting
-Redis is used to store blacklisted tokens with their remaining time-to-live (TTL). When a user logs out, their token is added to the blacklist until it expires. The JWT strategy checks if a token is blacklisted before validating it.
+### OAuth2 Integration
+- Multi-provider support (Google, GitHub)
+- Provider-specific strategies with profile mapping
+- Secure state parameter validation
+- PKCE support for enhanced security
+- Token storage and management in Redis
+- Automatic user creation/linking for OAuth2 users
 
-### Redis Module
-- Handles token blacklisting operations
-- Stores tokens with their expiration time
-- Automatically removes expired tokens
-- Manages refresh token storage and rotation
+### Security Features
+- Role-based access control (RBAC)
+- Token blacklisting for secure logout
+- Refresh token rotation
+- Rate limiting
+- CSRF protection
+- Secure session management
 
-### Logout Flow
-1. User sends token in Authorization header
-2. Token is validated and added to blacklist
-3. Token remains blacklisted until its original expiration time
-4. Subsequent requests with blacklisted token are rejected
+## Configuration
 
-### Refresh Token Flow
-1. User sends refresh token to /auth/refresh endpoint
-2. Token is validated and checked against Redis storage
-3. Old refresh token is invalidated
-4. New access and refresh tokens are generated
-5. New refresh token is stored in Redis with TTL
-
-## Next Steps
-
-### 1. OAuth2 Integration
-- Configure OAuth2 strategy
-- Implement provider-specific logic
-- Add OAuth2 endpoints:
-  - GET /auth/oauth2/:provider
-  - GET /auth/oauth2/:provider/callback
-
-### 2. Security Enhancements
-- Add rate limiting
-- Implement request validation
-- Configure CORS
-- Set up security headers
-- Define password policies
-
-### 3. Testing
-- Unit tests for services
-- E2E tests for auth flows
-- Integration tests for user operations
-- Security testing scenarios
-
-### 4. Documentation
-- API documentation
-- Authentication flows
-- Environment setup guide
-- Testing guide
-
-## Required Environment Variables
-Current:
-```
-# Database Configuration
-DB_HOST=postgres
-DB_PORT=5432
-DB_USER=admin
-DB_PASSWORD=admin
-DB_NAME=auth
-
-# Application Configuration
-PORT=3000
-NODE_ENV=development
-
+### Environment Variables
+```bash
 # JWT Configuration
 JWT_SECRET=your-secret-key
 JWT_EXPIRATION=15m
@@ -103,61 +44,114 @@ REFRESH_TOKEN_EXPIRATION=7d
 REDIS_HOST=redis
 REDIS_PORT=6379
 REDIS_PASSWORD=your-redis-password
-```
 
-To be added:
-```
+# Frontend Configuration
+FRONTEND_URL=http://localhost:4200
+
 # OAuth2 Configuration
-OAUTH2_CLIENT_ID=
-OAUTH2_CLIENT_SECRET=
-OAUTH2_CALLBACK_URL=
+OAUTH2_STATE_SECRET=your-state-secret
+OAUTH2_ENABLED_PROVIDERS=google,github
 
-# Security
-PASSWORD_SALT_ROUNDS=
-RATE_LIMIT_WINDOW=
-RATE_LIMIT_MAX_REQUESTS=
+# Google OAuth2
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GOOGLE_CALLBACK_URL=http://localhost:3000/auth/oauth2/google/callback
+
+# GitHub OAuth2
+GITHUB_CLIENT_ID=your-github-client-id
+GITHUB_CLIENT_SECRET=your-github-client-secret
+GITHUB_CALLBACK_URL=http://localhost:3000/auth/oauth2/github/callback
 ```
 
-## Dependencies Status
-Installed:
-- @nestjs/common
-- @nestjs/config
-- @nestjs/core
-- @nestjs/platform-express
-- @nestjs/typeorm
-- @nestjs/passport
-- @nestjs/jwt
-- @nestjs/cache-manager
-- passport
-- passport-jwt
-- passport-oauth2
-- bcrypt
-- class-validator
-- class-transformer
-- typeorm
-- pg
-- cache-manager
-- cache-manager-redis-store
-- uuid
+## API Endpoints
 
-To be installed:
-- @nestjs/throttler (for rate limiting)
-- helmet (for security headers)
+### Local Authentication
+- `POST /auth/login` - Login with email/password
+- `POST /auth/refresh` - Refresh access token
+- `POST /auth/logout` - Logout and invalidate tokens
 
-## API Endpoints Status
-### User Management (Protected by JWT & Roles Guard)
-- POST /users ✓
-- GET /users ✓
-- GET /users/:id ✓
-- PATCH /users/:id ✓
-- DELETE /users/:id ✓
+### OAuth2 Authentication
+- `GET /auth/oauth2/:provider` - Initiate OAuth2 flow
+- `GET /auth/oauth2/:provider/callback` - Handle OAuth2 callback
 
-### Authentication
-- POST /auth/login ✓
-- POST /auth/logout ✓
-- POST /auth/refresh ✓
-- GET /auth/profile (To be implemented)
+## Token Management
 
-### OAuth2 (To be implemented)
-- GET /auth/oauth2/:provider
-- GET /auth/oauth2/:provider/callback
+### Access Tokens
+- Short-lived JWT tokens (15 minutes)
+- Contains user ID, email, and roles
+- Used for API authentication
+
+### Refresh Tokens
+- Long-lived tokens (7 days)
+- Stored in Redis with user association
+- One-time use with automatic rotation
+- Can be revoked server-side
+
+## Security Considerations
+
+### OAuth2 Security
+- State parameter validation
+- PKCE implementation
+- Secure token storage
+- Provider-specific security measures
+- Automatic user linking
+- Profile data validation
+
+### General Security
+- Password hashing with bcrypt
+- Token encryption
+- HTTPS-only cookies
+- CSRF protection
+- Rate limiting
+- Input validation
+- Secure headers
+
+## Testing
+
+### Unit Tests
+- Authentication flows
+- Token management
+- Password hashing
+- Input validation
+
+### Integration Tests
+- OAuth2 provider integration
+- Token refresh flow
+- User management
+- Error handling
+
+### E2E Tests
+- Complete authentication flows
+- OAuth2 provider flows
+- Error scenarios
+- Security measures
+
+## Monitoring
+
+### Metrics
+- Authentication success/failure rates
+- Token refresh rates
+- OAuth2 provider usage
+- Error rates by type
+- Response times
+
+### Alerts
+- High failure rates
+- Unusual traffic patterns
+- Token validation failures
+- Redis connectivity issues
+
+## Maintenance
+
+### Regular Tasks
+- Token cleanup
+- Session management
+- Security updates
+- Provider API updates
+- Performance monitoring
+
+### Backup Procedures
+- Redis data backup
+- Configuration backup
+- User data backup
+- Audit log backup

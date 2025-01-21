@@ -59,4 +59,36 @@ export class RedisService {
   async deleteRefreshToken(key: string): Promise<void> {
     await this.cacheManager.del(key);
   }
+
+  /**
+   * Store OAuth2 provider tokens for a user
+   * @param userId The user's ID
+   * @param provider The OAuth2 provider name
+   * @param tokens The provider tokens to store
+   */
+  async storeOAuth2Tokens(userId: string, provider: string, tokens: any): Promise<void> {
+    const key = `oauth2:${userId}:${provider}`;
+    await this.cacheManager.set(key, tokens);
+  }
+
+  /**
+   * Get OAuth2 provider tokens for a user
+   * @param userId The user's ID
+   * @param provider The OAuth2 provider name
+   * @returns The stored provider tokens
+   */
+  async getOAuth2Tokens(userId: string, provider: string): Promise<any> {
+    const key = `oauth2:${userId}:${provider}`;
+    return this.cacheManager.get(key);
+  }
+
+  /**
+   * Delete OAuth2 provider tokens for a user
+   * @param userId The user's ID
+   * @param provider The OAuth2 provider name
+   */
+  async deleteOAuth2Tokens(userId: string, provider: string): Promise<void> {
+    const key = `oauth2:${userId}:${provider}`;
+    await this.cacheManager.del(key);
+  }
 }

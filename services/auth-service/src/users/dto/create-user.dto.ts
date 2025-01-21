@@ -5,15 +5,33 @@ export class CreateUserDto {
   @IsEmail()
   email: string;
 
+  @IsOptional()
   @IsString()
   @MinLength(8)
-  password: string;
+  password?: string;
 
+  @IsOptional()
   @IsString()
-  firstName: string;
+  firstName?: string;
 
+  @IsOptional()
   @IsString()
-  lastName: string;
+  lastName?: string;
+
+  @IsOptional()
+  @IsString()
+  picture?: string;
+
+  @IsOptional()
+  @IsString()
+  provider?: string;
+
+  @IsOptional()
+  @IsString()
+  providerId?: string;
+
+  @IsOptional()
+  providerData?: any;
 
   @IsOptional()
   @IsEnum(UserRole)

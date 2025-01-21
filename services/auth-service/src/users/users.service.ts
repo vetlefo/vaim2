@@ -22,13 +22,20 @@ export class UsersService {
       throw new ConflictException('Email already exists');
     }
 
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-    const user = this.usersRepository.create({
-      ...createUserDto,
-      password: hashedPassword,
-    });
+    const userData = { ...createUserDto };
+    
+    if (createUserDto.password) {
+      userData.password = await bcrypt.hash(createUserDto.password, 10);
+    }
 
+    const user = this.usersRepository.create(userData);
     return this.usersRepository.save(user);
+  }
+
+  async findByProviderData(provider: string, providerId: string): Promise<User | null> {
+    return this.usersRepository.findOne({
+      where: { provider, providerId },
+    });
   }
 
   async findAll(): Promise<User[]> {
