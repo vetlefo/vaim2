@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for all OpenRouter models including Claude-3.5-Sonnet
 - Enhanced streaming response handling
 - Automated model discovery through OpenRouter API
+- Integrated model capabilities tracking system
+- Detailed model comparison data for all supported models
+- Runtime model capabilities in response metadata
+- Comprehensive model performance metrics and pricing data
 
 ### Changed
 - Consolidated all model access through OpenRouter
@@ -21,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved error handling and retry mechanisms
 - Enhanced monitoring documentation
 - Updated default model to Claude-3.5-Sonnet
+- Enhanced response metadata to include model capabilities
+- Improved model selection logic with capability awareness
 
 ### Removed
 - Standalone Claude provider (now accessed through OpenRouter)

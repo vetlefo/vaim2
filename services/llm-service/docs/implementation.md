@@ -32,6 +32,42 @@ The OpenRouter provider serves as our primary implementation, offering:
 - Automatic retries with exponential backoff
 - Streaming support with proper error propagation
 - Model parameter optimization
+- Integrated model capabilities tracking
+- Runtime model performance metrics
+- Detailed model comparison data
+
+### Model Capabilities System
+
+The service now includes a comprehensive model capabilities tracking system:
+
+```typescript
+interface ModelCapabilities {
+  contextWindow: number;
+  maxOutputTokens?: number;
+  pricing: {
+    input: number;
+    output: number;
+    images?: number;
+  };
+  strengths: string[];
+  useCases: string[];
+  multimodal?: boolean;
+}
+```
+
+Key features of the capabilities system:
+- Detailed tracking of model specifications
+- Runtime access to model capabilities
+- Performance characteristics
+- Cost optimization data
+- Use case recommendations
+- Multimodal support tracking
+
+The capabilities data is integrated into:
+- Response metadata for informed decision-making
+- Model selection logic
+- Cost estimation
+- Performance monitoring
 
 ### Error Handling
 

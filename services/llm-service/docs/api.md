@@ -45,7 +45,26 @@ Generates a completion for the given messages.
     "model": "deepseek/deepseek-r1",
     "latency": 1234,
     "timestamp": "2025-01-21T18:30:00.000Z",
-    "cached": false
+    "cached": false,
+    "capabilities": {
+      "contextWindow": 128000,
+      "maxOutputTokens": 4096,
+      "pricing": {
+        "input": 0.14,
+        "output": 0.28
+      },
+      "strengths": [
+        "Open-source orientation",
+        "Strong code analysis",
+        "Good performance across multiple domains"
+      ],
+      "useCases": [
+        "Self-hosted deployments",
+        "Large codebase analysis",
+        "General domain tasks"
+      ],
+      "multimodal": false
+    }
   }
 }
 ```
@@ -67,7 +86,26 @@ Server-Sent Events stream with the following event format:
     "provider": "openrouter",
     "model": "deepseek/deepseek-r1",
     "latency": 1234,
-    "timestamp": "2025-01-21T18:30:00.000Z"
+    "timestamp": "2025-01-21T18:30:00.000Z",
+    "capabilities": {
+      "contextWindow": 128000,
+      "maxOutputTokens": 4096,
+      "pricing": {
+        "input": 0.14,
+        "output": 0.28
+      },
+      "strengths": [
+        "Open-source orientation",
+        "Strong code analysis",
+        "Good performance across multiple domains"
+      ],
+      "useCases": [
+        "Self-hosted deployments",
+        "Large codebase analysis",
+        "General domain tasks"
+      ],
+      "multimodal": false
+    }
   }
 }
 ```
@@ -119,6 +157,18 @@ query {
       latency
       timestamp
       cached
+      capabilities {
+        contextWindow
+        maxOutputTokens
+        pricing {
+          input
+          output
+          images
+        }
+        strengths
+        useCases
+        multimodal
+      }
     }
   }
 }

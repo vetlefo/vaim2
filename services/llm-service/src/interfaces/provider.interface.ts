@@ -1,4 +1,20 @@
 /**
+ * Model capabilities and pricing information
+ */
+export interface ModelCapabilities {
+  contextWindow: number;
+  maxOutputTokens?: number;
+  pricing: {
+    input: number;  // Cost per million tokens
+    output: number; // Cost per million tokens
+    images?: number; // Cost per thousand images if supported
+  };
+  strengths: string[];
+  useCases: string[];
+  multimodal?: boolean;
+}
+
+/**
  * Base interface for LLM provider responses
  */
 export interface LLMResponse {
@@ -13,6 +29,7 @@ export interface LLMResponse {
     provider: string;
     latency: number;
     timestamp: string;
+    capabilities?: ModelCapabilities;
   };
 }
 
@@ -73,6 +90,11 @@ export interface LLMProvider {
    * Check if provider is healthy
    */
   healthCheck(): Promise<boolean>;
+
+  /**
+   * List available models for this provider
+   */
+  listModels(): Promise<string[]>;
 }
 
 /**
@@ -106,6 +128,7 @@ export interface ProviderFactory {
   getProvider(name: string): LLMProvider | undefined;
   listProviders(): string[];
   listModels(provider: string): string[];
+  getModelCapabilities(model: string): ModelCapabilities | undefined;
 }
 
 /**
