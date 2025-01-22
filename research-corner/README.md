@@ -13,8 +13,18 @@ This directory serves as a dedicated sandbox environment for exploring quantum c
 ## Structure
 
 - `quantum-experiments.service.ts`: Core service for quantum-inspired experiments
+- `src/ai/deepseek.service.ts`: DeepSeek AI integration service with type-safe message handling
 - `Dockerfile.research`: Containerization setup for HPC/quantum environment
 - Supporting configuration and utility files
+
+### AI Integration Components
+
+The research corner includes AI integration services that support our quantum and HPC research:
+
+- DeepSeek Service: Provides type-safe integration with DeepSeek's AI models
+  - Custom type definitions for DeepSeek-specific message formats
+  - Proper handling of reasoning content in responses
+  - Type-safe API interactions
 
 ## Future Integrations
 
