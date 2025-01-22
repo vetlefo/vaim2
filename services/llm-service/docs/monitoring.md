@@ -56,21 +56,42 @@ All metrics are exposed at the `/monitoring/metrics` endpoint in Prometheus form
 
 ## Health Checks
 
-The service provides health checks at `/monitoring/health` with detailed status for:
+The service provides health checks at `/api/v1/monitoring/health` with detailed status information:
+
+```typescript
+interface HealthCheckResponse {
+  status: 'ok' | 'error';
+  info: {
+    redis: {
+      status: 'up' | 'down';
+      details: {
+        connection: boolean;
+        latency: number;
+      };
+    };
+    providers: {
+      status: 'up' | 'down';
+      details: Record<string, {
+        status: 'up' | 'down';
+        latency: number;
+      }>;
+    };
+  };
+}
+```
 
 ### Redis Health
-- Connection status
-- Latency measurements
-- Memory usage
+- Connection status with real-time verification
+- Latency measurements in milliseconds
+- Detailed error reporting if connection fails
 
 ### Provider Health
 - OpenRouter status and latency
   - All models (Claude, GPT-4, etc.) are accessed through OpenRouter
-  - Individual model availability
-  - Rate limit status
-- DeepSeek direct access (if configured)
-  - Connection status
-  - API response times
+  - Individual model availability with latency metrics
+  - Rate limit status and remaining quota
+- Automatic failover monitoring
+- Response time tracking per provider
 
 ### System Health
 - Overall error rate

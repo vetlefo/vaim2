@@ -170,7 +170,31 @@ The service exposes both REST and GraphQL APIs:
 - POST `/api/v1/complete` - Synchronous completion
 - POST `/api/v1/complete/stream` - Streaming completion
 - GET `/api/v1/models` - Available models
-- GET `/api/v1/health` - Service health status
+- GET `/api/v1/monitoring/health` - Service health status with Redis and provider checks
+
+### Health Check Implementation
+The health check endpoint provides detailed status information:
+```typescript
+interface HealthCheckResponse {
+  status: 'ok' | 'error';
+  info: {
+    redis: {
+      status: 'up' | 'down';
+      details: {
+        connection: boolean;
+        latency: number;
+      };
+    };
+    providers: {
+      status: 'up' | 'down';
+      details: Record<string, {
+        status: 'up' | 'down';
+        latency: number;
+      }>;
+    };
+  };
+}
+```
 
 ### GraphQL Schema
 ```graphql
