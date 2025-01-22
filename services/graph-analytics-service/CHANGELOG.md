@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.3.0] - 2025-01-22
+### Added
+- Comprehensive monitoring system implementation
+  - Enhanced Prometheus metrics for job execution, data retention, and resource usage
+  - Persistent audit logging with Neo4j integration
+  - Security event tracking and retention policy enforcement
+  - Performance and resource utilization metrics
+- New metrics:
+  - Job execution duration and status tracking
+  - Data retention operations and archive size monitoring
+  - Memory and CPU usage metrics
+  - Request latency and database operation tracking
+- Audit system enhancements:
+  - Neo4j-based persistent storage for audit events
+  - Security context tracking
+  - Data retention metadata
+  - Queryable audit history
+- Test coverage:
+  - Unit tests for PrometheusService
+  - Unit tests for AuditService
+  - Mock implementations for testing
+
+### Changed
+- Updated MonitoringModule with Neo4j integration
+- Enhanced PrometheusService with granular metrics
+- Improved audit logging with structured metadata
+
 ## [0.2.1] - 2025-01-21
 ### Added
 - Dedicated test setup for rate limiting functionality

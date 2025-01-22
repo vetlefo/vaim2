@@ -30,6 +30,66 @@ export class PrometheusService {
       ['error_code'],
       'counter'
     );
+
+    // Job execution metrics
+    this.registerMetric(
+      'vaim_job_execution_duration',
+      'Duration of analytics job execution in seconds',
+      ['job_type', 'status'],
+      'histogram'
+    );
+
+    this.registerMetric(
+      'vaim_job_status',
+      'Status of analytics jobs',
+      ['job_type', 'status'],
+      'counter'
+    );
+
+    // Data retention metrics
+    this.registerMetric(
+      'vaim_data_retention_operations',
+      'Count of data retention operations',
+      ['operation_type', 'status'],
+      'counter'
+    );
+
+    this.registerMetric(
+      'vaim_archived_data_size',
+      'Size of archived data in bytes',
+      ['data_type'],
+      'histogram'
+    );
+
+    // Resource usage metrics
+    this.registerMetric(
+      'vaim_memory_usage',
+      'Memory usage in bytes',
+      ['component'],
+      'histogram'
+    );
+
+    this.registerMetric(
+      'vaim_cpu_usage',
+      'CPU usage percentage',
+      ['component'],
+      'histogram'
+    );
+
+    // Performance metrics
+    this.registerMetric(
+      'vaim_request_latency',
+      'API request latency in seconds',
+      ['endpoint', 'method'],
+      'histogram'
+    );
+
+    this.registerMetric(
+      'vaim_database_operations',
+      'Database operation metrics',
+      ['operation_type', 'status'],
+      'histogram'
+    );
   }
 
   trackOperation<T>(operation: string, func: () => Promise<T>): Promise<T> {
