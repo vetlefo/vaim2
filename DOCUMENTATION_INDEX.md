@@ -52,6 +52,7 @@ Focus: Advanced Monitoring Implementation
 - [README](services/graph-analytics-service/README.md)
 - [Data Pipeline](services/graph-analytics-service/docs/data-pipeline.md)
 - [Testing Guide](services/graph-analytics-service/docs/testing.md)
+- [Visual Agentic Idea Manager](services/graph-analytics-service/docs/thought-graph.md) - ThoughtGraph implementation
 
 #### LLM Service 🔄
 - [README](services/llm-service/README.md) - Service overview
