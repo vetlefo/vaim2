@@ -1,161 +1,187 @@
-# LLM Service Providers Guide
+# LLM Service Providers
 
-This document outlines the available LLM providers and their implementation details.
+The LLM service uses a provider-based architecture to interact with different language model APIs. This document outlines the available providers and their configurations.
+
+## Provider Architecture
+
+The service uses a factory pattern to manage providers:
+- Each provider implements the `LLMProvider` interface
+- Providers are loaded dynamically at runtime
+- Health checks and monitoring are integrated
+- Automatic fallback handling is supported
 
 ## Available Providers
 
-### OpenRouter Provider
+### OpenRouter (Primary Provider)
 
-The OpenRouter provider is our primary interface to multiple LLM models through OpenRouter's API. It provides a unified way to access various models including DeepSeek, Claude, GPT-4, and others.
+OpenRouter is our primary provider, offering access to multiple LLM models through a unified API.
 
-#### Features
-- Unified model access through OpenRouter's API
-- Robust error handling and retry mechanism
-- Streaming support for real-time responses
-- Automatic parameter optimization per model
-- Connection pooling and timeout handling
-- Comprehensive test coverage
+#### Available Models
+
+##### Anthropic Models
+- `anthropic/claude-3.5-sonnet` - Latest Claude model, optimal balance of capabilities
+- `anthropic/claude-2.1` - Previous generation Claude
+- `anthropic/claude-2` - Legacy Claude model
+- `anthropic/claude-instant` - Fast, cost-effective model
+
+##### OpenAI Models
+- `openai/gpt-4-turbo` - Latest GPT-4 model
+- `openai/gpt-4` - Standard GPT-4
+- `openai/gpt-3.5-turbo` - Cost-effective option
+
+##### Meta Models
+- `meta/llama2-70b` - Largest Llama 2 model
+- `meta/llama2-13b` - Smaller Llama 2 variant
+
+##### Google Models
+- `google/palm-2` - Google's PaLM 2 model
+- `google/gemini-pro` - Latest Gemini model
+
+##### Deepseek Models
+- `deepseek/deepseek-coder` - Specialized for code
+- `deepseek/deepseek-chat` - General chat model
+- `deepseek/deepseek-math` - Math-focused model
+
+##### Mistral Models
+- `mistral/mistral-7b` - Base Mistral model
+- `mistral/mixtral-8x7b` - MoE architecture model
 
 #### Configuration
+
 ```typescript
 interface OpenRouterConfig {
-  apiKey: string;                // OpenRouter API key
-  defaultModel: string;          // Default model (e.g., 'deepseek/deepseek-r1')
-  baseUrl?: string;             // Optional custom API endpoint
-  siteUrl?: string;             // Your site URL for request attribution
-  siteName?: string;            // Your site name for request attribution
-  maxRetries?: number;          // Max retry attempts (default: 3)
-  timeout?: number;             // Request timeout in ms (default: 30000)
-  parameterCacheTTL?: number;   // Cache duration for model parameters (default: 1h)
+  apiKey: string;
+  baseUrl?: string;  // Defaults to https://openrouter.ai/api/v1
+  siteUrl?: string;  // For HTTP-Referer header
+  siteName?: string; // For X-Title header
+  defaultModel?: string;  // Defaults to anthropic/claude-3.5-sonnet
+  maxRetries?: number;  // Defaults to 3
+  timeout?: number;  // Defaults to 30000ms
 }
 ```
 
-#### Error Handling
-The provider implements comprehensive error handling for various scenarios:
-- Authentication errors (invalid API key)
+Environment variables:
+```env
+OPENROUTER_API_KEY=your_api_key
+SITE_URL=your_site_url
+SITE_NAME=your_site_name
+OPENROUTER_MAX_RETRIES=3
+OPENROUTER_TIMEOUT=30000
+```
+
+### DeepSeek (Direct Access)
+
+Optional direct access to DeepSeek models, bypassing OpenRouter.
+
+#### Available Models
+- `deepseek-coder` - Code generation and analysis
+- `deepseek-chat` - General conversation
+- `deepseek-math` - Mathematical computations
+
+#### Configuration
+
+```typescript
+interface DeepSeekConfig {
+  apiKey: string;
+  model?: string;  // Defaults to deepseek-chat
+  maxRetries?: number;  // Defaults to 3
+  timeout?: number;  // Defaults to 30000ms
+}
+```
+
+Environment variables:
+```env
+DEEPSEEK_API_KEY=your_api_key
+DEEPSEEK_MODEL=deepseek-chat
+DEEPSEEK_MAX_RETRIES=3
+DEEPSEEK_TIMEOUT=30000
+```
+
+## Provider Features
+
+All providers support:
+- Completion requests
+- Streaming responses
+- Token counting
+- Error handling
+- Health checks
+- Model listing
 - Rate limiting
-- Context length exceeded
-- Network timeouts
-- Model-specific errors
-- Transient API errors with automatic retry
+- Caching (where appropriate)
 
-#### Streaming Implementation
-Streaming support is implemented with:
-- Chunk-based processing
-- Proper error propagation
-- Automatic reconnection
-- Buffer management for partial messages
+## Provider Selection
 
-### Claude Provider
+The service automatically selects the appropriate provider based on:
+1. Model specification in the request
+2. Provider health status
+3. Rate limit availability
+4. Cost optimization rules
 
-Direct integration with Anthropic's Claude models.
+## Error Handling
 
-[Configuration and implementation details to be added]
+Providers implement standardized error handling:
+```typescript
+enum LLMErrorType {
+  PROVIDER_ERROR = 'PROVIDER_ERROR',
+  RATE_LIMIT = 'RATE_LIMIT',
+  CONTEXT_LENGTH = 'CONTEXT_LENGTH',
+  INVALID_REQUEST = 'INVALID_REQUEST',
+  TIMEOUT = 'TIMEOUT',
+  MODEL_NOT_FOUND = 'MODEL_NOT_FOUND',
+  UNKNOWN = 'UNKNOWN',
+}
+```
 
-### DeepSeek Provider
+## Monitoring
 
-Integration with DeepSeek's models.
+Each provider reports metrics for:
+- Request counts
+- Error rates
+- Token usage
+- Response times
+- Rate limit status
 
-[Configuration and implementation details to be added]
+See [Monitoring Documentation](./monitoring.md) for details.
 
 ## Adding New Providers
 
 To add a new provider:
 
-1. Implement the `LLMProvider` interface:
-```typescript
-interface LLMProvider {
-  initialize(): Promise<void>;
-  complete(messages: ChatMessage[], options?: LLMRequestOptions): Promise<LLMResponse>;
-  completeStream(messages: ChatMessage[], options?: LLMRequestOptions): Promise<AsyncIterableIterator<LLMResponse>>;
-  healthCheck(): Promise<boolean>;
-}
-```
-
-2. Add provider configuration interface:
-```typescript
-interface YourProviderConfig {
-  apiKey: string;
-  // Additional configuration options
-}
-```
-
-3. Implement error handling using the `LLMError` class:
-```typescript
-throw new LLMError(
-  LLMErrorType.PROVIDER_ERROR,
-  'Error message',
-  'provider-name',
-  originalError
-);
-```
-
-4. Add comprehensive tests covering:
-- Basic functionality
-- Error scenarios
-- Streaming capabilities
-- Retry mechanisms
-- Edge cases
-
-5. Update the provider factory to include the new provider:
-```typescript
-case 'your-provider':
-  return new YourProvider(config as YourProviderConfig);
-```
-
-## Testing Providers
-
-Each provider must include:
-- Unit tests for all functionality
-- Integration tests with mock servers
-- Error handling tests
-- Streaming tests
-- Performance tests
-
-See `services/llm-service/src/providers/implementations/__tests__/` for examples.
-
-## Error Types
-
-Available error types for provider implementations:
-```typescript
-enum LLMErrorType {
-  PROVIDER_ERROR = 'PROVIDER_ERROR',       // Provider-specific errors
-  RATE_LIMIT = 'RATE_LIMIT',              // Rate limiting errors
-  CONTEXT_LENGTH = 'CONTEXT_LENGTH',       // Context length exceeded
-  INVALID_REQUEST = 'INVALID_REQUEST',     // Invalid request parameters
-  MODEL_NOT_FOUND = 'MODEL_NOT_FOUND',     // Requested model not available
-  TIMEOUT = 'TIMEOUT',                     // Request timeout
-  UNKNOWN = 'UNKNOWN'                      // Unexpected errors
-}
-```
+1. Implement the `LLMProvider` interface
+2. Add provider configuration to `ProviderConfig`
+3. Update the provider factory
+4. Add monitoring integration
+5. Update documentation
 
 ## Best Practices
 
-1. Error Handling
-   - Implement comprehensive error handling
-   - Use appropriate error types
-   - Include original error details when possible
-   - Implement retries for transient errors
+1. **Model Selection**
+   - Use `anthropic/claude-3.5-sonnet` for general tasks
+   - Use specialized models for specific tasks (code, math)
+   - Consider cost vs. performance tradeoffs
 
-2. Configuration
-   - Make configuration flexible but with sensible defaults
-   - Validate configuration on initialization
-   - Document all configuration options
+2. **Error Handling**
+   - Implement retries with exponential backoff
+   - Handle rate limits gracefully
+   - Provide meaningful error messages
 
-3. Testing
-   - Write comprehensive tests
-   - Include error scenarios
-   - Test streaming functionality
-   - Use mock servers for integration tests
+3. **Performance**
+   - Use streaming for long responses
+   - Implement caching where appropriate
+   - Monitor token usage
 
-4. Performance
-   - Implement connection pooling
-   - Cache model parameters when appropriate
-   - Handle rate limiting gracefully
-   - Monitor and log performance metrics
+4. **Monitoring**
+   - Track error rates per model
+   - Monitor response times
+   - Set up alerts for issues
 
-5. Documentation
-   - Document all provider features
-   - Include configuration examples
-   - Document error handling
-   - Keep changelog updated
+## Future Enhancements
+
+1. Dynamic model discovery
+2. Automated cost optimization
+3. Enhanced caching strategies
+4. Advanced fallback mechanisms
+5. Performance analytics
+6. Custom model fine-tuning support
+
+For implementation details, see the [Implementation Guide](./implementation.md).

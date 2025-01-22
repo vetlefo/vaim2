@@ -23,18 +23,35 @@ export class LLMProviderFactory implements ProviderFactory, OnModuleInit {
   private initializeModelMap() {
     // OpenRouter models
     this.modelMap.set('openrouter', [
-      'deepseek/deepseek-r1',
-      'deepseek/deepseek-chat',
-      'anthropic/claude-3-sonnet',
+      // Anthropic models
+      'anthropic/claude-3.5-sonnet',
+      'anthropic/claude-2.1',
       'anthropic/claude-2',
+      'anthropic/claude-instant',
+      // OpenAI models
+      'openai/gpt-4-turbo',
+      'openai/gpt-4',
+      'openai/gpt-3.5-turbo',
+      // Meta models
       'meta/llama2-70b',
+      'meta/llama2-13b',
+      // Google models
       'google/palm-2',
+      'google/gemini-pro',
+      // Deepseek models
+      'deepseek/deepseek-coder',
+      'deepseek/deepseek-chat',
+      'deepseek/deepseek-math',
+      // Mistral models
+      'mistral/mistral-7b',
+      'mistral/mixtral-8x7b',
     ]);
 
-    // Direct provider models
+    // Direct provider models (if direct access is configured)
     this.modelMap.set('deepseek', [
-      'deepseek-r1',
+      'deepseek-coder',
       'deepseek-chat',
+      'deepseek-math',
     ]);
   }
 
@@ -51,7 +68,7 @@ export class LLMProviderFactory implements ProviderFactory, OnModuleInit {
         baseUrl: 'https://openrouter.ai/api/v1',
         siteUrl: this.configService.get<string>('SITE_URL'),
         siteName: this.configService.get<string>('SITE_NAME'),
-        defaultModel: 'deepseek/deepseek-r1',
+        defaultModel: 'anthropic/claude-3.5-sonnet',
         maxRetries: this.configService.get<number>('OPENROUTER_MAX_RETRIES', 3),
         timeout: this.configService.get<number>('OPENROUTER_TIMEOUT', 30000),
       } as OpenRouterConfig);
@@ -62,7 +79,7 @@ export class LLMProviderFactory implements ProviderFactory, OnModuleInit {
     if (deepseekApiKey) {
       await this.createProvider('deepseek', {
         apiKey: deepseekApiKey,
-        model: this.configService.get<string>('DEEPSEEK_MODEL', 'deepseek-r1'),
+        model: this.configService.get<string>('DEEPSEEK_MODEL', 'deepseek-chat'),
         maxRetries: this.configService.get<number>('DEEPSEEK_MAX_RETRIES', 3),
         timeout: this.configService.get<number>('DEEPSEEK_TIMEOUT', 30000),
       });

@@ -1,215 +1,175 @@
 # LLM Service Monitoring
 
-## Current Implementation
+The LLM service includes comprehensive monitoring capabilities through Prometheus metrics and health checks. This document outlines the available metrics, health checks, and how to use them.
 
-### Health Checks
+## Metrics
 
-1. Provider Health
-```typescript
-@Get('health')
-async healthCheck(): Promise<{ [key: string]: boolean }> {
-  return {
-    status: 'ok',
-    providers: {
-      openrouter: await this.checkProviderHealth('openrouter'),
-      openrouterOpenAI: await this.checkProviderHealth('openrouterOpenAI')
-    },
-    redis: await this.redisService.ping()
-  };
-}
-```
+All metrics are exposed at the `/monitoring/metrics` endpoint in Prometheus format. A detailed JSON view is also available at `/monitoring/metrics/detailed`.
 
-2. Redis Health
-- Connection monitoring
-- Ping checks
-- Error tracking
+### Request Metrics
 
-3. System Health
-- Basic service availability checks
-- Connection status monitoring
-- Error rate tracking
+- `llm_requests_total` (Counter)
+  - Total number of LLM requests
+  - Labels: provider, status (success/error)
 
-## Planned Enhancements
+- `llm_request_duration_seconds` (Histogram)
+  - Request duration in seconds
+  - Labels: provider
+  - Buckets: 0.1, 0.5, 1, 2, 5
 
-### 1. Metrics Collection
+- `llm_active_requests` (Gauge)
+  - Number of currently active requests
+  - Labels: provider
 
-#### Request Metrics
-```typescript
-interface RequestMetrics {
-  totalRequests: number;
-  successfulRequests: number;
-  failedRequests: number;
-  averageLatency: number;
-  p95Latency: number;
-  p99Latency: number;
-}
-```
+### Cache Metrics
 
-#### Cache Metrics
-```typescript
-interface CacheMetrics {
-  hitRate: number;
-  missRate: number;
-  evictionRate: number;
-  memoryUsage: number;
-  keyCount: number;
-}
-```
+- `llm_cache_hits_total` (Counter)
+  - Total number of cache hits
 
-#### Provider Metrics
-```typescript
-interface ProviderMetrics {
-  requestCount: number;
-  errorRate: number;
-  averageResponseTime: number;
-  tokenUsage: {
-    prompt: number;
-    completion: number;
-    total: number;
-  };
-}
-```
+- `llm_cache_misses_total` (Counter)
+  - Total number of cache misses
 
-### 2. Prometheus Integration
+- `llm_cache_keys_total` (Gauge)
+  - Total number of keys in cache
 
-1. Metric Definitions
-```typescript
-const requestCounter = new Counter({
-  name: 'llm_requests_total',
-  help: 'Total number of LLM requests',
-  labelNames: ['provider', 'status']
-});
+- `llm_cache_memory_bytes` (Gauge)
+  - Memory usage of cache in bytes
 
-const latencyHistogram = new Histogram({
-  name: 'llm_request_duration_seconds',
-  help: 'Request duration in seconds',
-  buckets: [0.1, 0.5, 1, 2, 5]
-});
-```
+### Provider Metrics
 
-2. Metric Collection Points
-```typescript
-async complete(messages: ChatMessageInput[]): Promise<CompletionResponse> {
-  const start = Date.now();
-  try {
-    const response = await this.provider.complete(messages);
-    requestCounter.inc({ provider: this.provider.name, status: 'success' });
-    latencyHistogram.observe((Date.now() - start) / 1000);
-    return response;
-  } catch (error) {
-    requestCounter.inc({ provider: this.provider.name, status: 'error' });
-    throw error;
-  }
-}
-```
+- `llm_provider_requests_total` (Counter)
+  - Total number of requests per provider
+  - Labels: provider
 
-### 3. Alerting System
+- `llm_provider_errors_total` (Counter)
+  - Total number of provider errors
+  - Labels: provider, error_type
 
-1. Alert Conditions
-```yaml
-alerts:
-  - name: HighErrorRate
-    condition: error_rate > 0.05
-    duration: 5m
-    severity: critical
+- `llm_token_usage_total` (Counter)
+  - Total number of tokens used
+  - Labels: provider, type (prompt/completion)
 
-  - name: HighLatency
-    condition: p95_latency > 2000
-    duration: 10m
-    severity: warning
+- `llm_provider_latency_seconds` (Histogram)
+  - Provider request latency in seconds
+  - Labels: provider
+  - Buckets: 0.1, 0.5, 1, 2, 5, 10
 
-  - name: CachePerformance
-    condition: cache_hit_rate < 0.5
-    duration: 30m
-    severity: warning
-```
+## Health Checks
 
-2. Notification Channels
-- Email alerts
-- Slack notifications
-- PagerDuty integration
+The service provides health checks at `/monitoring/health` with detailed status for:
 
-## Dashboard Implementation
-
-### 1. Service Overview
-- Request volume
-- Success/error rates
-- Average latency
-- Active providers
-
-### 2. Cache Performance
-- Hit/miss ratios
+### Redis Health
+- Connection status
+- Latency measurements
 - Memory usage
-- Eviction rates
-- Key distribution
 
-### 3. Provider Metrics
-- Per-provider success rates
-- Response times
-- Token usage
-- Cost tracking
+### Provider Health
+- OpenRouter status and latency
+  - All models (Claude, GPT-4, etc.) are accessed through OpenRouter
+  - Individual model availability
+  - Rate limit status
+- DeepSeek direct access (if configured)
+  - Connection status
+  - API response times
 
-### 4. System Health
-- Service status
+### System Health
+- Overall error rate
+- Active request count
+- Average response times
 - Resource utilization
-- Error logs
-- Rate limit status
 
-## Implementation Timeline
+## Alerting
 
-1. Phase 1: Basic Metrics (Current)
-- Health check endpoints
-- Basic error tracking
-- Simple status monitoring
+The service is designed to work with Prometheus alerting rules. Recommended alerts:
 
-2. Phase 2: Enhanced Metrics (Next)
-- Prometheus integration
-- Detailed request tracking
-- Cache performance monitoring
+```yaml
+groups:
+- name: llm_service_alerts
+  rules:
+  - alert: HighErrorRate
+    expr: rate(llm_provider_errors_total[5m]) / rate(llm_requests_total[5m]) > 0.05
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      description: "Error rate above 5% for {{ $labels.provider }}"
 
-3. Phase 3: Advanced Monitoring
-- Alerting system
-- Dashboards
-- Automated scaling triggers
+  - alert: HighLatency
+    expr: histogram_quantile(0.95, rate(llm_request_duration_seconds_bucket[5m])) > 5
+    for: 5m
+    labels:
+      severity: warning
+    annotations:
+      description: "95th percentile latency above 5s for {{ $labels.provider }}"
 
-4. Phase 4: Production Optimization
-- Custom metrics
-- Performance optimization
-- Cost optimization
+  - alert: CacheMemoryHigh
+    expr: llm_cache_memory_bytes > 1e9
+    for: 15m
+    labels:
+      severity: warning
+    annotations:
+      description: "Cache memory usage above 1GB"
+
+  - alert: ProviderDown
+    expr: up{job="llm_service"} == 0
+    for: 5m
+    labels:
+      severity: critical
+    annotations:
+      description: "Provider {{ $labels.provider }} is down"
+```
+
+## Grafana Dashboards
+
+A sample Grafana dashboard configuration is available in `monitoring/dashboards/llm-service.json`. The dashboard includes:
+
+- Request rate and latency graphs
+- Error rate tracking
+- Cache performance metrics
+- Provider-specific panels
+- Resource utilization graphs
 
 ## Best Practices
 
-1. Metric Collection
-- Use consistent naming
-- Include relevant labels
-- Maintain granular metrics
-- Regular cleanup
+1. **Regular Monitoring**
+   - Check error rates and latencies daily
+   - Monitor cache hit rates for optimization
+   - Track token usage per provider
 
-2. Alert Configuration
-- Define clear thresholds
-- Avoid alert fatigue
-- Include runbooks
-- Regular review
+2. **Alerting Configuration**
+   - Set up alerts for error spikes
+   - Monitor rate limit approaches
+   - Track unusual latency patterns
 
-3. Dashboard Organization
-- Logical grouping
-- Clear visualization
-- Important metrics first
-- Regular updates
+3. **Resource Management**
+   - Monitor cache memory usage
+   - Track active request counts
+   - Watch for provider-specific issues
 
-## Future Considerations
+4. **Performance Optimization**
+   - Use metrics to identify bottlenecks
+   - Optimize cache settings based on hit rates
+   - Adjust rate limits based on usage patterns
 
-1. Advanced Monitoring
-- Machine learning for anomaly detection
-- Predictive scaling
-- Cost optimization analytics
+## Integration with External Systems
 
-2. Integration Improvements
-- APM tools integration
-- Log aggregation
-- Trace correlation
+The monitoring system is designed to integrate with:
 
-3. Automation
-- Auto-scaling rules
-- Self-healing procedures
-- Performance optimization
+- Prometheus for metrics collection
+- Grafana for visualization
+- AlertManager for alert routing
+- ELK Stack for log aggregation
+- DataDog for APM (if configured)
+
+## Future Enhancements
+
+Planned monitoring improvements:
+
+1. Cost tracking metrics per provider
+2. Enhanced token usage analytics
+3. Machine learning model performance metrics
+4. Advanced anomaly detection
+5. Custom provider health checks
+6. Automated performance optimization
+
+For more information on setting up monitoring, see the [Monitoring Setup Guide](./monitoring-setup.md).
