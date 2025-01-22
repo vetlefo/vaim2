@@ -1,0 +1,97 @@
+# VAIM2 Documentation
+
+Welcome to the VAIM2 project wiki! This wiki contains comprehensive documentation for all aspects of the project.
+
+## Quick Navigation
+
+- [Current Development Status](#current-development-status)
+- [Project Documentation](#project-documentation)
+- [Services](#services)
+- [Tools & Security](#tools--security)
+- [Workflows](#workflows)
+- [Research](#research)
+
+## Current Development Status
+
+Currently in **Phase 3** with the following progress:
+
+### LLM Service Enhancements
+- ✅ Redis Cache Implementation
+- ✅ REST & GraphQL API Implementation
+- ✅ Security & Rate Limiting
+- ✅ Testing Infrastructure
+- 🚧 Monitoring System (In Progress)
+
+### Next Phase (Phase 4)
+Focus: Advanced Monitoring Implementation
+- Prometheus Integration
+- Metrics Collection System
+- Performance Analytics
+- Cost Optimization Tools
+
+## Project Documentation
+
+### Development Phases
+- [Phase 1: Infrastructure Foundations](Phase-1) ✅
+- [Phase 2: Core Services](Phase-2) ✅
+- [Phase 3: Service Integration](Phase-3) 🔄
+- [Phase 4: Advanced Features](Phase-4) 📅
+- [Phase 5: System Optimization](Phase-5)
+- [Phase 6: Extended Functionality](Phase-6)
+- [Phase 7: System Maturity](Phase-7)
+- [Phase 8: Advanced Integration](Phase-8)
+- [Phase 9: System Refinement](Phase-9)
+- [Phase 10: Final Optimization](Phase-10)
+- [Quantum Readiness](Quantum-Readiness)
+
+### Services
+
+#### Auth Service ✅
+- [Auth Service Overview](Auth-Service)
+- [OAuth2 Implementation](OAuth2-Implementation)
+- [Secrets Management](Auth-Service-Secrets)
+
+#### Graph Analytics Service ✅
+- [Graph Analytics Overview](Graph-Analytics)
+- [Data Pipeline](Data-Pipeline)
+- [Testing Guide](Graph-Analytics-Testing)
+
+#### LLM Service 🔄
+- [LLM Service Overview](LLM-Service)
+- [API Documentation](LLM-API)
+- [Architecture](LLM-Architecture)
+- [Configuration](LLM-Configuration)
+- [Cache System](LLM-Cache)
+- [Rate Limiting](LLM-Rate-Limiting)
+- [Testing Documentation](LLM-Testing)
+- [Monitoring](LLM-Monitoring)
+- [Providers Guide](LLM-Providers)
+- [Model Capabilities](LLM-Model-Comparisons)
+
+### Tools & Security
+- [Docker Setup](Docker-Setup)
+- [Claude Integration](Claude-Integration)
+- [Global Secrets Management](Secrets-Management)
+
+### Workflows
+- [CI/CD Pipeline](CICD-Pipeline)
+- [High-Level Workflow](High-Level-Workflow)
+
+## Future Features and Expansions
+
+The following features are part of our future roadmap and are not yet implemented in the codebase:
+
+### Planned Services
+- NLP Microservice (Coming Soon) - Natural language processing pipeline
+- HPC Integration (See [research-corner](Research-Overview) for experiments)
+
+### Future Integrations
+- Workflow Automation (n8n orchestration)
+- Communication Platform Integration (Slack/MS Teams)
+- Advanced Code Bridging
+- Specialized LLM Providers (O1 Pro, Mistral 2501)
+
+For a comprehensive list of planned features and their implementation status, see [Future Modules](FUTURE_MODULES.md).
+
+### Research
+- [Research Overview](Research-Overview)

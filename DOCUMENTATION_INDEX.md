@@ -80,5 +80,11 @@ Focus: Advanced Monitoring Implementation
 - [CI/CD Pipeline](workflows/cicd.md)
 - [High-Level Workflow](workflows/high-level-workflow.md)
 
+### Roadmap and Future Plans
+- [Future Modules and Features](FUTURE_MODULES.md) - Comprehensive list of planned but not implemented features
+- [Future Innovations](implementation/future-innovations.md) - Advanced feature concepts
+- [Implementation Roadmap](implementation/roadmap.md) - Development timeline and phases
+
 ### Research Corner
 - [Research Overview](research-corner/README.md)
+- [Quantum Readiness](phases/quantum-readiness.md) - Experimental quantum computing preparation

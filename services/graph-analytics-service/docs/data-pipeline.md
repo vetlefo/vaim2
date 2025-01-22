@@ -71,11 +71,46 @@ PIPELINE_WEEKLY_ANALYTICS_TIME=0 0 0 * * 0 # Run at midnight on Sundays
 - Automatic retry mechanism for failed operations
 - Alert configuration available through Prometheus
 
+## Performance Monitoring
+The service currently tracks the following metrics:
+
+### Standard Metrics
+- Job execution times and failures
+- Data retention operations
+- Memory and CPU usage
+- Query response times
+- Cache hit rates
+
+### Graph-Specific Metrics
+- Node/relationship creation rates
+- Graph algorithm performance
+- Query pattern statistics
+- Index utilization
+
+All metrics are exposed via Prometheus endpoint and can be visualized through Grafana dashboards.
+
+## Future Enhancements
+
+### HPC Integration Status
+While the service is designed with scalability in mind, HPC integration is currently in the planning phase. Future releases will introduce:
+- Distributed graph processing
+- GPU acceleration for specific algorithms
+- Parallel computation capabilities
+
+### Machine Learning Pipeline
+Advanced ML integration is planned but not yet implemented. Future features will include:
+- Graph embedding generation
+- ML-based anomaly detection
+- Predictive analytics
+These capabilities are part of the roadmap but are not currently available in the main codebase.
+
 ## Best Practices
 1. Monitor the metrics endpoint for job performance
 2. Adjust retention period based on data growth
 3. Configure archive path with sufficient storage
 4. Review job schedules to minimize impact on system performance
+5. Use provided monitoring dashboards for performance tracking
+6. Regularly review algorithm performance metrics
 
 ## Security Considerations
 - Metrics endpoint requires authentication

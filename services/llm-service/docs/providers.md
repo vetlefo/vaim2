@@ -182,13 +182,50 @@ To add a new provider:
    - Monitor response times
    - Set up alerts for issues
 
+## Current Limitations and Future Features
+
+### Cost Management
+The service currently implements basic cost controls:
+- Daily cost limit checks through environment variables
+- Token usage tracking per request
+- Basic cost estimation based on model pricing
+
+Advanced cost optimization features planned but not yet implemented:
+- Predictive cost analysis
+- Automated model selection based on cost/performance ratio
+- Detailed cost attribution and reporting
+- Budget-aware routing
+
+### HPC Integration Status
+HPC integration is currently in planning phase and not implemented in the codebase:
+- Distributed inference
+- GPU acceleration
+- Model parallelism
+- Batch processing optimization
+
+### Specialized Provider Integration
+The following providers are planned but not yet integrated:
+- o1 Pro
+- Mistral Codestral
+- MiniMax-01
+
+These integrations are part of the enterprise roadmap and will be implemented based on demand and performance requirements.
+
 ## Future Enhancements
 
 1. Dynamic model discovery
-2. Automated cost optimization
-3. Enhanced caching strategies
-4. Advanced fallback mechanisms
-5. Performance analytics
-6. Custom model fine-tuning support
+2. Enhanced caching strategies
+3. Advanced fallback mechanisms
+4. Performance analytics
+5. Custom model fine-tuning support
 
 For implementation details, see the [Implementation Guide](./implementation.md).
+
+## Enterprise Features
+Some advanced features mentioned in the broader documentation are part of our enterprise roadmap and not included in the current codebase:
+- HPC/GPU acceleration
+- Advanced cost optimization tools
+- Specialized model providers
+- Custom model deployment
+
+Please contact the development team for information about enterprise feature availability.

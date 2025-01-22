@@ -109,7 +109,24 @@ The service implements comprehensive error handling:
    - Enhanced error handling for missing configuration
 
 ## Future Improvements
+
+### Immediate Priorities
 - Consider implementing refresh token rotation
-- Add rate limiting for authentication attempts
 - Enhance logging for security events
 - Consider implementing additional OAuth providers
+
+### Rate Limiting Status
+The service includes configuration variables for rate limiting (RATE_LIMIT_WINDOW, RATE_LIMIT_MAX_REQUESTS) but the implementation is currently pending. This feature is planned for the next development cycle to protect against brute force attacks and DoS attempts.
+
+### Advanced Features Roadmap
+Several advanced security features are planned for future phases:
+
+- GPU-Accelerated Auth Flows (Phase 4)
+  - Will leverage GPU acceleration for token validation and cryptographic operations
+  - Currently in planning stage, not yet implemented
+
+- AI-Powered Security (Phase 5)
+  - Advanced threat detection and zero-trust architecture
+  - Purely conceptual at this stage, part of long-term roadmap
+
+For detailed information about these and other planned features, see implementation/future-innovations.md.
