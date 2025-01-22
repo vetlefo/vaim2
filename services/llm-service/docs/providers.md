@@ -1,281 +1,161 @@
-# LLM Service Provider Documentation
+# LLM Service Providers Guide
 
-## OpenRouter Integration
+This document outlines the available LLM providers and their implementation details.
 
-The LLM Service implements two different approaches for OpenRouter integration:
-1. Direct API integration using axios
-2. OpenAI SDK integration with Parameters API support
+## Available Providers
 
-### OpenRouter OpenAI Provider
+### OpenRouter Provider
 
-The OpenAI SDK provider uses the official OpenAI SDK configured for OpenRouter, enhanced with dynamic parameter optimization through the OpenRouter Parameters API.
+The OpenRouter provider is our primary interface to multiple LLM models through OpenRouter's API. It provides a unified way to access various models including DeepSeek, Claude, GPT-4, and others.
 
 #### Features
-- OpenAI SDK integration
-- Automatic parameter optimization via Parameters API
-- Dynamic model-specific parameter fetching
-- Parameter caching for performance
-- Type-safe requests
-- Built-in error handling
-- Streaming support
-- Request timeout handling
-- Default DeepSeek-R1 model support
-- Support for Claude-3.5-Sonnet through OpenRouter
+- Unified model access through OpenRouter's API
+- Robust error handling and retry mechanism
+- Streaming support for real-time responses
+- Automatic parameter optimization per model
+- Connection pooling and timeout handling
+- Comprehensive test coverage
 
-#### Implementation
-
-```typescript
-interface ModelParameters {
-  model: string;
-  supported_parameters: string[];
-  temperature_p50: number;
-  top_p_p50: number;
-  frequency_penalty_p50: number;
-  presence_penalty_p50: number;
-  top_k_p50?: number;
-  min_p_p50?: number;
-  repetition_penalty_p50?: number;
-  top_a_p50?: number;
-}
-
-class OpenRouterOpenAIProvider implements LLMProvider {
-  private client: OpenAI;
-  private readonly defaultModel: string;
-  private modelParameters: Map<string, ModelParameters>;
-
-  constructor(config: OpenRouterConfig) {
-    this.defaultModel = config.defaultModel || 'deepseek/deepseek-r1';
-    // Initialize with OpenAI SDK configuration
-  }
-
-  private async fetchModelParameters(modelId: string): Promise<ModelParameters>;
-  private async getOptimalParameters(modelId: string): Promise<Partial<LLMRequestOptions>>;
-  async complete(messages: ChatMessage[], options?: LLMRequestOptions): Promise<LLMResponse>;
-  async completeStream(messages: ChatMessage[], options?: LLMRequestOptions): Promise<AsyncIterableIterator<LLMResponse>>;
-}
-```
-
-#### Available Models
-- `deepseek/deepseek-r1` (default)
-- `anthropic/claude-3.5-sonnet`
-
-#### Parameter Optimization
-The provider automatically fetches and uses optimal parameters for each model through the OpenRouter Parameters API:
-
-```typescript
-GET /api/v1/parameters/{author}/{modelSlug}
-```
-
-Response includes:
-- Supported parameters for the model
-- Optimal parameter values based on usage statistics
-- Model-specific parameter ranges and defaults
-
-#### Error Handling
-- APIError handling
-- Rate limit detection
-- Context length validation
-- Model availability checks
-- Timeout handling
-- Network error handling
-
-### DeepSeek Integration
-
-The DeepSeek provider implements type-safe integration with DeepSeek's API.
-
-#### Features
-- Type-safe message handling
-- Custom parameter support
-- Reasoning content handling
-- Automatic parameter validation
-- Default parameter values
-- Error handling with retries
-
-#### Implementation
-
-```typescript
-interface DeepseekMessage extends OpenAI.ChatCompletionMessageParam {
-  reasoning_content?: string;
-}
-
-interface DeepseekParameters {
-  temperature?: number;
-  top_p?: number;
-  top_k?: number;
-  frequency_penalty?: number;
-  presence_penalty?: number;
-  repetition_penalty?: number;
-  min_p?: number;
-  top_a?: number;
-}
-
-class DeepseekService {
-  private readonly client: OpenAI;
-  private readonly defaultParameters: DeepseekParameters;
-
-  constructor(config: ConfigService) {
-    // Initialize with configuration
-  }
-
-  async createChatCompletion(
-    messages: Array<DeepseekMessage>,
-    parameters?: Partial<DeepseekParameters>
-  ): Promise<LLMResponse>;
-}
-```
-
-## Testing Infrastructure
-
-### Mock OpenRouter API
-
-The test environment includes a mock OpenRouter API that simulates various scenarios:
-
-```typescript
-// Mock API endpoints
-app.post('/api/v1/chat/completions', (req, res) => {
-  // Handle completion requests
-});
-
-app.get('/api/v1/models', (req, res) => {
-  // Handle model listing
-});
-
-app.get('/api/v1/parameters/:author/:modelSlug', (req, res) => {
-  // Handle parameter queries
-});
-```
-
-#### Features
-- Rate limiting simulation (10 requests/minute)
-- Context length validation (8192 tokens)
-- Configurable timeouts
-- Authentication validation
-- Streaming response simulation
-- Error scenario simulation
-- Parameter API simulation
-
-### Test Cases
-
-#### Provider Tests
-```typescript
-describe('OpenRouterProvider', () => {
-  // Parameter API tests
-  it('should fetch model parameters successfully');
-  it('should cache model parameters');
-  it('should handle parameter API errors');
-  it('should use optimal parameters');
-
-  // Completion tests
-  it('should complete messages successfully');
-  it('should handle context length errors');
-  it('should handle rate limiting');
-  it('should handle timeouts');
-  it('should handle invalid API key');
-  it('should retry on failure');
-
-  // Streaming tests
-  it('should handle streaming responses');
-  it('should handle streaming errors');
-  it('should handle streaming timeouts');
-
-  // Health check tests
-  it('should return true when API is accessible');
-  it('should return false when API is inaccessible');
-});
-```
-
-## Provider Configuration
-
-### OpenRouter Configuration
+#### Configuration
 ```typescript
 interface OpenRouterConfig {
-  apiKey: string;
-  defaultModel?: string; // Defaults to 'deepseek/deepseek-r1'
-  baseUrl?: string;
-  siteUrl?: string;
-  siteName?: string;
-  maxRetries?: number;
-  timeout?: number;
+  apiKey: string;                // OpenRouter API key
+  defaultModel: string;          // Default model (e.g., 'deepseek/deepseek-r1')
+  baseUrl?: string;             // Optional custom API endpoint
+  siteUrl?: string;             // Your site URL for request attribution
+  siteName?: string;            // Your site name for request attribution
+  maxRetries?: number;          // Max retry attempts (default: 3)
+  timeout?: number;             // Request timeout in ms (default: 30000)
+  parameterCacheTTL?: number;   // Cache duration for model parameters (default: 1h)
 }
 ```
 
-### DeepSeek Configuration
+#### Error Handling
+The provider implements comprehensive error handling for various scenarios:
+- Authentication errors (invalid API key)
+- Rate limiting
+- Context length exceeded
+- Network timeouts
+- Model-specific errors
+- Transient API errors with automatic retry
+
+#### Streaming Implementation
+Streaming support is implemented with:
+- Chunk-based processing
+- Proper error propagation
+- Automatic reconnection
+- Buffer management for partial messages
+
+### Claude Provider
+
+Direct integration with Anthropic's Claude models.
+
+[Configuration and implementation details to be added]
+
+### DeepSeek Provider
+
+Integration with DeepSeek's models.
+
+[Configuration and implementation details to be added]
+
+## Adding New Providers
+
+To add a new provider:
+
+1. Implement the `LLMProvider` interface:
 ```typescript
-interface DeepseekParameters {
-  temperature?: number;
-  top_p?: number;
-  top_k?: number;
-  frequency_penalty?: number;
-  presence_penalty?: number;
-  repetition_penalty?: number;
-  min_p?: number;
-  top_a?: number;
+interface LLMProvider {
+  initialize(): Promise<void>;
+  complete(messages: ChatMessage[], options?: LLMRequestOptions): Promise<LLMResponse>;
+  completeStream(messages: ChatMessage[], options?: LLMRequestOptions): Promise<AsyncIterableIterator<LLMResponse>>;
+  healthCheck(): Promise<boolean>;
 }
 ```
 
-## Error Mapping
+2. Add provider configuration interface:
+```typescript
+interface YourProviderConfig {
+  apiKey: string;
+  // Additional configuration options
+}
+```
 
-### Provider-Specific Errors
+3. Implement error handling using the `LLMError` class:
+```typescript
+throw new LLMError(
+  LLMErrorType.PROVIDER_ERROR,
+  'Error message',
+  'provider-name',
+  originalError
+);
+```
+
+4. Add comprehensive tests covering:
+- Basic functionality
+- Error scenarios
+- Streaming capabilities
+- Retry mechanisms
+- Edge cases
+
+5. Update the provider factory to include the new provider:
+```typescript
+case 'your-provider':
+  return new YourProvider(config as YourProviderConfig);
+```
+
+## Testing Providers
+
+Each provider must include:
+- Unit tests for all functionality
+- Integration tests with mock servers
+- Error handling tests
+- Streaming tests
+- Performance tests
+
+See `services/llm-service/src/providers/implementations/__tests__/` for examples.
+
+## Error Types
+
+Available error types for provider implementations:
 ```typescript
 enum LLMErrorType {
-  PROVIDER_ERROR = 'PROVIDER_ERROR',
-  RATE_LIMIT = 'RATE_LIMIT',
-  CONTEXT_LENGTH = 'CONTEXT_LENGTH',
-  TIMEOUT = 'TIMEOUT',
-  MODEL_NOT_FOUND = 'MODEL_NOT_FOUND',
-  INVALID_REQUEST = 'INVALID_REQUEST',
-  UNKNOWN = 'UNKNOWN',
+  PROVIDER_ERROR = 'PROVIDER_ERROR',       // Provider-specific errors
+  RATE_LIMIT = 'RATE_LIMIT',              // Rate limiting errors
+  CONTEXT_LENGTH = 'CONTEXT_LENGTH',       // Context length exceeded
+  INVALID_REQUEST = 'INVALID_REQUEST',     // Invalid request parameters
+  MODEL_NOT_FOUND = 'MODEL_NOT_FOUND',     // Requested model not available
+  TIMEOUT = 'TIMEOUT',                     // Request timeout
+  UNKNOWN = 'UNKNOWN'                      // Unexpected errors
 }
 ```
 
-### Error Handling Strategy
-1. Attempt to identify specific error type
-2. Map to standardized LLMError
-3. Include original error details
-4. Apply retry strategy if applicable
-5. Propagate error with context
+## Best Practices
 
-## Performance Considerations
+1. Error Handling
+   - Implement comprehensive error handling
+   - Use appropriate error types
+   - Include original error details when possible
+   - Implement retries for transient errors
 
-### Parameter Optimization
-- Automatic fetching of optimal parameters
-- Parameter caching with TTL
-- Model-specific defaults
-- Dynamic parameter updates
-- Fallback strategies
+2. Configuration
+   - Make configuration flexible but with sensible defaults
+   - Validate configuration on initialization
+   - Document all configuration options
 
-### Retry Strategy
-- Maximum retries configurable
-- Exponential backoff
-- Specific error types for retries
-- Timeout handling
+3. Testing
+   - Write comprehensive tests
+   - Include error scenarios
+   - Test streaming functionality
+   - Use mock servers for integration tests
 
-### Rate Limiting
-- Per-provider rate limits
-- Global rate limiting
-- Burst handling
-- Queue management
+4. Performance
+   - Implement connection pooling
+   - Cache model parameters when appropriate
+   - Handle rate limiting gracefully
+   - Monitor and log performance metrics
 
-### Caching
-- Parameter caching
-- Response caching
-- Cache key generation
-- TTL management
-- Cache invalidation
-
-## Monitoring
-
-### Health Checks
-- Provider availability
-- API response time
-- Error rates
-- Rate limit status
-- Parameter API status
-
-### Metrics
-- Request latency
-- Token usage
-- Error rates
-- Cache hit rates
-- Provider availability
-- Parameter optimization effectiveness
+5. Documentation
+   - Document all provider features
+   - Include configuration examples
+   - Document error handling
+   - Keep changelog updated

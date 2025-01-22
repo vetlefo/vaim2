@@ -47,10 +47,20 @@ export default class OpenRouterProvider implements LLMProvider {
 
   async initialize(): Promise<void> {
     try {
-      await this.healthCheck();
+      const isHealthy = await this.healthCheck();
+      if (!isHealthy) {
+        throw new LLMError(
+          LLMErrorType.PROVIDER_ERROR,
+          'Failed to initialize OpenRouter provider',
+          'openrouter'
+        );
+      }
       // Pre-fetch parameters for default model
       await this.getModelParameters(this.defaultModel);
     } catch (error) {
+      if (error instanceof LLMError) {
+        throw error;
+      }
       throw new LLMError(
         LLMErrorType.PROVIDER_ERROR,
         'Failed to initialize OpenRouter provider',
@@ -94,11 +104,12 @@ export default class OpenRouterProvider implements LLMProvider {
     const startTime = Date.now();
     let retries = 0;
     const model = options?.model || this.defaultModel;
+    let lastError: any;
 
     // Get optimal parameters for model
     const parameters = await this.getModelParameters(model);
 
-    while (retries < this.maxRetries) {
+    while (retries <= this.maxRetries) {
       try {
         const response = await this.client.post('/chat/completions', {
           model: model,
@@ -134,20 +145,31 @@ export default class OpenRouterProvider implements LLMProvider {
           },
         };
       } catch (error) {
+        lastError = error;
+        const llmError = this.handleError(error);
+        
+        // Don't retry certain errors
+        if (
+          llmError.type === LLMErrorType.INVALID_REQUEST ||
+          llmError.type === LLMErrorType.CONTEXT_LENGTH ||
+          llmError.type === LLMErrorType.MODEL_NOT_FOUND ||
+          llmError.type === LLMErrorType.PROVIDER_ERROR ||
+          llmError.type === LLMErrorType.RATE_LIMIT ||
+          llmError.type === LLMErrorType.TIMEOUT
+        ) {
+          throw llmError;
+        }
+
         retries++;
-        if (retries === this.maxRetries) {
-          throw this.handleError(error);
+        if (retries > this.maxRetries) {
+          throw llmError;
         }
         // Exponential backoff
         await new Promise(resolve => setTimeout(resolve, Math.pow(2, retries) * 1000));
       }
     }
 
-    throw new LLMError(
-      LLMErrorType.UNKNOWN,
-      'Failed to complete request after retries',
-      'openrouter'
-    );
+    throw this.handleError(lastError);
   }
 
   async completeStream(
@@ -177,8 +199,7 @@ export default class OpenRouterProvider implements LLMProvider {
         responseType: 'stream',
       });
 
-      const stream = response.data;
-      return this.processStream(stream, startTime, model);
+      return this.processStream(response.data, startTime, model);
     } catch (error) {
       throw this.handleError(error);
     }
@@ -198,7 +219,9 @@ export default class OpenRouterProvider implements LLMProvider {
 
         for (const line of lines) {
           if (line.trim() === '') continue;
-          if (line.startsWith('data: ')) {
+          if (!line.startsWith('data: ')) continue;
+
+          try {
             const data = JSON.parse(line.slice(6));
             if (data.choices?.[0]?.delta?.content) {
               yield {
@@ -216,6 +239,9 @@ export default class OpenRouterProvider implements LLMProvider {
                 },
               };
             }
+          } catch (e) {
+            // Ignore parse errors for incomplete chunks
+            continue;
           }
         }
       }
@@ -308,6 +334,14 @@ export default class OpenRouterProvider implements LLMProvider {
             error
           );
         default:
+          if (error.code === 'ECONNABORTED') {
+            return new LLMError(
+              LLMErrorType.TIMEOUT,
+              'Request timed out',
+              'openrouter',
+              error
+            );
+          }
           return new LLMError(
             LLMErrorType.UNKNOWN,
             `Unexpected error: ${message}`,
@@ -315,6 +349,15 @@ export default class OpenRouterProvider implements LLMProvider {
             error
           );
       }
+    }
+
+    if (error instanceof Error) {
+      return new LLMError(
+        LLMErrorType.UNKNOWN,
+        error.message,
+        'openrouter',
+        error
+      );
     }
 
     return new LLMError(

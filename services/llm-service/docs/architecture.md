@@ -2,206 +2,235 @@
 
 ## Overview
 
-The LLM Service is designed with a modular architecture that separates concerns and enables easy extension with new providers. The service integrates with OpenRouter as the primary LLM provider, with support for both direct API calls and OpenAI SDK integration.
+The LLM Service is designed with a modular, layered architecture that emphasizes reliability, extensibility, and performance. The service provides a unified interface to multiple LLM providers while handling caching, rate limiting, and error management.
 
-## Core Components
+## Architecture Layers
 
-```mermaid
-graph TD
-    A[API Layer] --> B[LLM Service]
-    B --> C[Provider Factory]
-    C --> D[OpenRouter Provider]
-    C --> E[OpenRouter OpenAI Provider]
-    B --> F[Redis Cache]
-    A --> G[GraphQL Resolvers]
-    G --> B
+### 1. API Layer
+
+The service exposes both REST and GraphQL endpoints:
+
+```plaintext
+┌─────────────────┐
+│   API Layer     │
+├─────────┬───────┤
+│ GraphQL │ REST  │
+└─────────┴───────┘
 ```
 
-### API Layer
-- REST endpoints for completions and health checks
-- GraphQL resolvers for queries and subscriptions
-- Request validation and error handling
+- REST endpoints for traditional HTTP clients
+- GraphQL for flexible querying
+- WebSocket support for streaming responses
+
+### 2. Service Layer
+
+```plaintext
+┌─────────────────────────┐
+│     Service Layer       │
+├─────────────────────────┤
+│ - Request validation    │
+│ - Response formatting   │
+│ - Error handling       │
+│ - Provider selection   │
+└─────────────────────────┘
+```
+
+Handles:
+- Request processing
+- Provider selection and fallback
 - Response formatting
+- Error propagation
 
-### LLM Service
-- Core business logic
-- Provider selection and management
-- Caching strategy
-- Error handling and retries
-- Request/response transformation
+### 3. Provider Layer
 
-### Provider Factory
-- Provider instantiation and configuration
-- Provider health checks
-- Model mapping and validation
-- Fallback handling
+Recently refactored for improved reliability:
 
-### Redis Cache
-- Response caching
-- Cache invalidation
+```plaintext
+┌──────────────────────────────┐
+│      Provider Layer          │
+├──────────────────────────────┤
+│ ┌────────────────────────┐   │
+│ │    OpenRouter          │   │
+│ │ - Error handling       │   │
+│ │ - Retry mechanism      │   │
+│ │ - Parameter caching    │   │
+│ │ - Stream management    │   │
+│ └────────────────────────┘   │
+│                              │
+│ ┌────────────────────────┐   │
+│ │    Other Providers     │   │
+│ └────────────────────────┘   │
+└──────────────────────────────┘
+```
+
+Key improvements:
+- Unified error handling system
+- Robust retry mechanism
+- Enhanced streaming support
+- Automatic parameter optimization
+- Connection pooling
+
+### 4. Cache Layer
+
+```plaintext
+┌─────────────────────────┐
+│     Cache Layer         │
+├─────────────────────────┤
+│ - Response caching      │
+│ - Parameter caching     │
+│ - Cache invalidation    │
+└─────────────────────────┘
+```
+
+Features:
+- Redis-based caching
 - TTL management
-- Health monitoring
+- Cache invalidation strategies
+- Stream response handling
 
-## Test Infrastructure
+### 5. Rate Limiting Layer
 
-```mermaid
-graph TD
-    A[Test Runner] --> B[Unit Tests]
-    A --> C[Integration Tests]
-    A --> D[E2E Tests]
-    C --> E[Mock OpenRouter API]
-    C --> F[Redis Test Instance]
-    D --> E
-    D --> F
-    E --> G[Rate Limiter]
-    E --> H[Error Simulator]
-    E --> I[Stream Handler]
+```plaintext
+┌─────────────────────────┐
+│  Rate Limiting Layer    │
+├─────────────────────────┤
+│ - Global limits         │
+│ - Provider limits       │
+│ - User quotas          │
+└─────────────────────────┘
 ```
 
-### Mock OpenRouter API
-- Simulates OpenRouter API responses
-- Implements rate limiting
-- Handles streaming responses
-- Simulates various error conditions
-- Configurable latency and timeouts
-
-### Test Containers
-- Redis test instance
-- Mock OpenRouter API service
-- Isolated test network
-- Health checks and readiness probes
-
-### Test Coverage
-- Unit tests: Provider implementations, service logic
-- Integration tests: Redis caching, provider integration
-- E2E tests: API endpoints, GraphQL resolvers
-
-## Data Flow
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant API
-    participant Cache
-    participant Service
-    participant Provider
-    
-    Client->>API: Request completion
-    API->>Cache: Check cache
-    alt Cache hit
-        Cache-->>API: Return cached response
-        API-->>Client: Return response
-    else Cache miss
-        Cache-->>Service: No cache entry
-        Service->>Provider: Request completion
-        Provider-->>Service: Return completion
-        Service->>Cache: Store response
-        Service-->>API: Return response
-        API-->>Client: Return response
-    end
-```
+Implements:
+- Multi-level rate limiting
+- Automatic backoff
+- Quota management
+- Usage tracking
 
 ## Error Handling
 
-```mermaid
-graph TD
-    A[Error Occurs] --> B{Error Type}
-    B -->|Provider Error| C[Retry with Backoff]
-    B -->|Rate Limit| D[Queue Request]
-    B -->|Context Length| E[Return Error]
-    B -->|Timeout| F[Retry with Timeout]
-    C --> G{Max Retries?}
-    G -->|Yes| H[Return Error]
-    G -->|No| I[Retry Request]
+The service implements a comprehensive error handling strategy:
+
+```plaintext
+┌─────────────────────────────┐
+│     Error Handling          │
+├─────────────────────────────┤
+│ - Provider errors           │
+│ - Rate limiting            │
+│ - Context length           │
+│ - Network timeouts         │
+│ - Invalid requests         │
+└─────────────────────────────┘
 ```
 
-### Error Types
-- Provider errors: Authentication, availability
-- Rate limiting: Per-provider and global limits
-- Context length: Model-specific limits
-- Timeouts: Network and provider timeouts
-- Validation: Request parameter validation
+Features:
+- Standardized error types
+- Error propagation
+- Retry mechanisms
+- Error logging and monitoring
 
-## Caching Strategy
+## Monitoring
 
-```mermaid
-graph TD
-    A[Request] --> B{Cache Enabled?}
-    B -->|Yes| C{Cache Entry Exists?}
-    B -->|No| D[Forward Request]
-    C -->|Yes| E[Return Cached]
-    C -->|No| F[Forward Request]
-    F --> G[Cache Response]
-    G --> H[Return Response]
+```plaintext
+┌─────────────────────────────┐
+│        Monitoring           │
+├─────────────────────────────┤
+│ - Performance metrics       │
+│ - Error tracking           │
+│ - Usage statistics         │
+│ - Provider health          │
+└─────────────────────────────┘
 ```
 
-### Cache Implementation
-- Redis as primary cache store
-- Configurable TTL per response
-- Cache key generation based on request parameters
-- Cache invalidation on error
-- Cache bypass for streaming requests
+Tracks:
+- Request latencies
+- Error rates
+- Cache hit rates
+- Provider availability
+- Resource usage
+
+## Data Flow
+
+```plaintext
+Client Request
+      ↓
+API Layer (REST/GraphQL)
+      ↓
+Service Layer
+      ↓
+Rate Limiting Check
+      ↓
+Cache Check → [Cache Hit] → Response
+      ↓
+Provider Layer
+      ↓
+External LLM Provider
+      ↓
+Cache Update
+      ↓
+Response
+```
 
 ## Provider Implementation
 
-```mermaid
-graph TD
-    A[Provider Factory] --> B[Base Provider Interface]
-    B --> C[OpenRouter Direct]
-    B --> D[OpenRouter OpenAI]
-    C --> E[Axios Client]
-    D --> F[OpenAI SDK]
-    E --> G[Error Handling]
-    F --> G
-    G --> H[Response Mapping]
+The provider layer has been enhanced with:
+
+```typescript
+interface LLMProvider {
+  initialize(): Promise<void>;
+  complete(messages: ChatMessage[], options?: LLMRequestOptions): Promise<LLMResponse>;
+  completeStream(messages: ChatMessage[], options?: LLMRequestOptions): Promise<AsyncIterableIterator<LLMResponse>>;
+  healthCheck(): Promise<boolean>;
+}
 ```
 
-### Provider Interface
-- Standard methods for all providers
-- Error handling and retries
-- Response transformation
-- Health checks
-- Configuration validation
+Key features:
+- Standardized interface
+- Error handling
+- Health monitoring
+- Stream support
+
+## Configuration Management
+
+```plaintext
+┌─────────────────────────────┐
+│    Configuration Layer      │
+├─────────────────────────────┤
+│ - Environment variables     │
+│ - Provider configs         │
+│ - Service settings         │
+└─────────────────────────────┘
+```
+
+Manages:
+- Provider credentials
+- Service settings
+- Performance tuning
+- Feature flags
 
 ## Testing Architecture
 
-```mermaid
-graph TD
-    A[Test Suite] --> B[Unit Tests]
-    A --> C[Integration Tests]
-    A --> D[E2E Tests]
-    B --> E[Jest]
-    C --> F[Docker Compose]
-    D --> F
-    F --> G[Mock API]
-    F --> H[Redis]
-    G --> I[Rate Limiter]
-    G --> J[Error Simulator]
+```plaintext
+┌─────────────────────────────┐
+│      Testing Layer          │
+├─────────────────────────────┤
+│ - Unit tests               │
+│ - Integration tests        │
+│ - E2E tests               │
+│ - Performance tests        │
+└─────────────────────────────┘
 ```
 
-### Test Components
-- Mock OpenRouter API for integration testing
-- Redis instance for cache testing
-- Docker Compose for test environment
-- Jest for test execution
-- Supertest for HTTP testing
+Includes:
+- Mock providers
+- Test utilities
+- Coverage tracking
+- Performance benchmarks
 
-## Monitoring and Health Checks
+## Future Considerations
 
-```mermaid
-graph TD
-    A[Health Check] --> B[Provider Status]
-    A --> C[Redis Status]
-    A --> D[API Status]
-    B --> E[Aggregate Status]
-    C --> E
-    D --> E
-    E --> F[Health Endpoint]
-```
-
-### Health Monitoring
-- Provider availability checks
-- Redis connection status
-- API endpoint health
-- Response time monitoring
-- Error rate tracking
+Planned architectural improvements:
+- Enhanced model parameter optimization
+- Advanced caching strategies
+- Provider load balancing
+- Cost optimization
+- Enhanced monitoring

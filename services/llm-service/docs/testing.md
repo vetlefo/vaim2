@@ -1,189 +1,279 @@
-# LLM Service Testing Documentation
+# LLM Service Testing Guide
 
 ## Overview
 
-The LLM service implements a comprehensive testing strategy covering unit tests, integration tests, and end-to-end (E2E) tests. This document outlines the testing infrastructure, coverage, and best practices.
+This document outlines the testing strategy and implementation for the LLM service, with a particular focus on provider testing, error handling, and streaming capabilities.
 
-## Test Infrastructure
+## Test Structure
 
-### Test Setup
+### Provider Tests
+
+Provider tests are located in `src/providers/implementations/__tests__/` and follow this structure:
+
 ```typescript
-// test/setup.ts
-import { RedisService } from '../src/redis/redis.service';
-// ... other imports
+describe('Provider', () => {
+  describe('initialize', () => {
+    // Initialization tests
+    // Error handling tests
+  });
 
-beforeAll(async () => {
-  // Initialize test environment
-  await redisService.flushDb();
-});
+  describe('complete', () => {
+    // Basic completion tests
+    // Error handling tests
+    // Retry mechanism tests
+  });
 
-afterAll(async () => {
-  // Clean up test environment
-  await redisService.flushDb();
+  describe('completeStream', () => {
+    // Streaming functionality tests
+    // Stream error handling
+    // Buffer management tests
+  });
+
+  describe('healthCheck', () => {
+    // Health check tests
+    // Error condition tests
+  });
 });
 ```
 
-### Environment Configuration
-```env
-# .env.test
-OPENROUTER_API_KEY=test-key
-RATE_LIMIT_WINDOW=1000
-RATE_LIMIT_MAX_REQUESTS=10
+### Error Handling Tests
+
+Each provider must include comprehensive error handling tests:
+
+```typescript
+it('should handle rate limiting', async () => {
+  // Mock rate limit response
+  mockAxiosInstance.post.mockRejectedValueOnce({
+    isAxiosError: true,
+    response: {
+      status: 429,
+      data: { error: { message: 'Rate limit exceeded' } },
+    },
+  });
+
+  await expect(provider.complete(mockMessages)).rejects.toThrow(
+    expect.objectContaining({
+      type: LLMErrorType.RATE_LIMIT,
+      message: 'Rate limit exceeded',
+      provider: 'provider-name',
+    })
+  );
+});
+```
+
+### Streaming Tests
+
+Streaming functionality tests cover:
+
+```typescript
+it('should handle streaming responses', async () => {
+  const mockStream = createMockStream([
+    'data: {"choices":[{"delta":{"content":"1"}}]}\n\n',
+    'data: {"choices":[{"delta":{"content":"2"}}]}\n\n',
+  ]);
+
+  mockAxiosInstance.post.mockResolvedValueOnce({ data: mockStream });
+
+  const stream = await provider.completeStream(mockMessages);
+  const chunks = [];
+
+  for await (const chunk of stream) {
+    chunks.push(chunk);
+    expect(chunk).toMatchObject({
+      text: expect.any(String),
+      metadata: expect.any(Object),
+    });
+  }
+});
+```
+
+## Test Categories
+
+### Unit Tests
+
+Unit tests cover individual components:
+- Provider implementations
+- Service layer
+- Controllers
+- Guards
+- Utilities
+
+### Integration Tests
+
+Integration tests verify component interactions:
+- Provider with service layer
+- Service with cache
+- Rate limiting integration
+- Error propagation
+
+### E2E Tests
+
+End-to-end tests validate complete flows:
+- API endpoints
+- Streaming endpoints
+- Error handling
+- Rate limiting
+- Authentication
+
+## Mock Implementations
+
+### Mock Providers
+
+```typescript
+const mockProvider: LLMProvider = {
+  initialize: jest.fn(),
+  complete: jest.fn(),
+  completeStream: jest.fn(),
+  healthCheck: jest.fn(),
+};
+```
+
+### Mock Streams
+
+```typescript
+const createMockStream = (chunks: string[]) => ({
+  [Symbol.asyncIterator]: () => ({
+    next: async () => {
+      if (chunks.length > 0) {
+        return { done: false, value: Buffer.from(chunks.shift()!) };
+      }
+      return { done: true, value: undefined };
+    },
+  }),
+});
+```
+
+## Test Utilities
+
+### Error Testing
+
+```typescript
+export const expectLLMError = async (
+  promise: Promise<any>,
+  type: LLMErrorType,
+  message: string,
+  provider: string
+) => {
+  await expect(promise).rejects.toThrow(
+    expect.objectContaining({
+      type,
+      message,
+      provider,
+    })
+  );
+};
+```
+
+### Response Matchers
+
+```typescript
+export const matchLLMResponse = {
+  text: expect.any(String),
+  usage: {
+    promptTokens: expect.any(Number),
+    completionTokens: expect.any(Number),
+    totalTokens: expect.any(Number),
+  },
+  metadata: {
+    provider: expect.any(String),
+    model: expect.any(String),
+    latency: expect.any(Number),
+  },
+};
 ```
 
 ## Test Coverage
 
-### Unit Tests
-
-1. Service Layer Tests
-```typescript
-// src/llm/llm.service.spec.ts
-describe('LLMService', () => {
-  it('should return completion response', async () => {
-    // Test completion functionality
-  });
-
-  it('should handle rate limiting', async () => {
-    // Test rate limiting logic
-  });
-});
+Required coverage thresholds:
+```javascript
+// jest.config.js
+module.exports = {
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 85,
+      lines: 90,
+      statements: 90,
+    },
+  },
+};
 ```
 
-2. Provider Tests
-```typescript
-// src/providers/implementations/__tests__/openrouter.provider.spec.ts
-describe('OpenRouterProvider', () => {
-  it('should handle API responses', async () => {
-    // Test provider functionality
-  });
+Current coverage areas:
+- Provider implementations
+- Error handling
+- Streaming functionality
+- Rate limiting
+- Cache integration
+- Service layer
+- API endpoints
 
-  it('should handle errors', async () => {
-    // Test error scenarios
-  });
-});
+## Running Tests
+
+### Unit Tests
+```bash
+npm test
 ```
 
 ### Integration Tests
-
-1. Cache Integration
-```typescript
-describe('Cache Integration', () => {
-  it('should cache identical requests', async () => {
-    // Test caching behavior
-  });
-
-  it('should respect TTL settings', async () => {
-    // Test cache expiration
-  });
-});
-```
-
-2. Rate Limiting Integration
-```typescript
-describe('Rate Limiting Integration', () => {
-  it('should enforce global limits', async () => {
-    // Test global rate limiting
-  });
-
-  it('should track per-user limits', async () => {
-    // Test user-specific limits
-  });
-});
+```bash
+npm run test:integration
 ```
 
 ### E2E Tests
-
-1. API Endpoints
-```typescript
-// test/llm.e2e-spec.ts
-describe('LLM Service (e2e)', () => {
-  it('should handle completion requests', async () => {
-    // Test complete flow
-  });
-
-  it('should stream responses', async () => {
-    // Test streaming functionality
-  });
-});
-```
-
-2. Error Scenarios
-```typescript
-describe('Error Handling (e2e)', () => {
-  it('should handle invalid API keys', async () => {
-    // Test authentication errors
-  });
-
-  it('should handle context length errors', async () => {
-    // Test input validation
-  });
-});
-```
-
-## Mock Services
-
-### Mock OpenRouter Service
-```typescript
-// test/mock-openrouter/server.js
-app.post('/api/v1/chat/completions', (req, res) => {
-  // Mock completion responses
-});
-```
-
-## Test Commands
-
 ```bash
-# Run unit tests
-npm run test
-
-# Run e2e tests
 npm run test:e2e
-
-# Run tests with coverage
-npm run test:cov
 ```
 
-## Coverage Requirements
-
-- Unit Tests: >80% coverage
-- Integration Tests: >70% coverage
-- E2E Tests: Critical path coverage
+### Coverage Report
+```bash
+npm run test:coverage
+```
 
 ## Best Practices
 
-1. Test Organization
-   - Group related tests
-   - Use descriptive test names
-   - Maintain test independence
+1. Error Testing
+   - Test all error types
+   - Verify error messages
+   - Check error propagation
+   - Test retry mechanisms
 
-2. Mock Usage
+2. Streaming Tests
+   - Test chunk processing
+   - Verify error handling
+   - Test buffer management
+   - Check metadata consistency
+
+3. Mock Implementation
+   - Use realistic mock data
+   - Simulate network conditions
+   - Test edge cases
    - Mock external services
-   - Use consistent mock data
-   - Document mock behavior
 
-3. Error Testing
-   - Test error scenarios
-   - Validate error messages
-   - Check error handling
+4. Test Organization
+   - Group related tests
+   - Use descriptive names
+   - Maintain test isolation
+   - Clean up after tests
 
-4. Performance Testing
-   - Test response times
-   - Verify rate limiting
-   - Check resource usage
+5. Coverage
+   - Maintain high coverage
+   - Focus on critical paths
+   - Test edge cases
+   - Document uncovered scenarios
 
-## Future Improvements
+## Continuous Integration
 
-1. Test Coverage
-   - Increase overall coverage
-   - Add performance tests
-   - Expand error scenarios
+Tests are run in CI/CD pipeline:
+- On pull requests
+- Before deployments
+- Nightly builds
+- Coverage reports
 
-2. Test Infrastructure
-   - Add load testing
-   - Implement stress testing
-   - Add security testing
+## Debugging Tests
 
-3. Automation
-   - Enhance CI/CD integration
-   - Add automated benchmarks
-   - Implement test reporting
+Tips for debugging test failures:
+- Use verbose output: `npm test -- --verbose`
+- Debug specific tests: `npm test -- -t "test name"`
+- Check mock implementations
+- Verify test isolation
