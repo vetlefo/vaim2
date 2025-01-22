@@ -23,11 +23,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated TypeScript configuration for better module support
 - Improved error handling in WebSocket communication
 - Enhanced type definitions for graph operations
+- Optimized graph visualization performance
+- Improved node label handling using content property
+- Removed custom wheel sensitivity for better cross-platform compatibility
 
 ### Fixed
 - WebSocket connection handling for development
 - Node position calculation in graph canvas
 - TypeScript configuration for server
+- Node label display issues in graph visualization
+- Graph style property type definitions
+- Cytoscape.js warning messages for node labels
 
 ## [0.1.0] - 2025-01-22
 
