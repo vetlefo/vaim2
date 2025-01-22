@@ -30,11 +30,13 @@ The OpenRouter provider serves as our primary implementation, offering:
 - Access to multiple LLM models through a single interface
 - Comprehensive error handling
 - Automatic retries with exponential backoff
-- Streaming support with proper error propagation
-- Model parameter optimization
+- Streaming support with proper AsyncIterator implementation
+- Efficient parameter caching with TTL management
 - Integrated model capabilities tracking
 - Runtime model performance metrics
 - Detailed model comparison data
+- Consolidated provider implementation for better maintainability
+- Proper handling of streaming errors and cleanup
 
 ### Model Capabilities System
 

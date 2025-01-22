@@ -14,7 +14,14 @@ The service uses a factory pattern to manage providers:
 
 ### OpenRouter (Primary Provider)
 
-OpenRouter is our primary provider, offering access to multiple LLM models through a unified API.
+OpenRouter is our primary provider, offering access to multiple LLM models through a unified API. The implementation has been consolidated into a single, robust provider that handles both standard and streaming completions with proper AsyncIterator support.
+
+#### Key Features
+- Unified streaming and non-streaming implementation
+- Proper AsyncIterator support for streaming responses
+- Robust error handling with automatic retries
+- Efficient parameter caching
+- Detailed model capabilities tracking
 
 #### Available Models
 
