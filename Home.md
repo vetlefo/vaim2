@@ -67,6 +67,9 @@ Focus: Advanced Analytics Implementation
 - [Rate Limiting](LLM-Rate-Limiting)
 - [Testing Documentation](LLM-Testing)
 - [Monitoring](LLM-Monitoring)
+  - Health check endpoint: `/api/v1/monitoring/health`
+  - Redis and provider health monitoring
+  - Real-time metrics and status
 - [Providers Guide](LLM-Providers)
 - [Model Capabilities](LLM-Model-Comparisons)
 

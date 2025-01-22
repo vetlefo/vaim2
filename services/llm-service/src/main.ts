@@ -34,7 +34,7 @@ async function bootstrap() {
   const url = await app.getUrl();
   console.log(`🚀 LLM Service running on: ${url}`);
   console.log(`🔥 GraphQL Playground: ${url}/graphql`);
-  console.log(`💓 Health Check: ${url}/health`);
+  console.log(`💓 Health Check: ${url}/${apiPrefix}/monitoring/health`);
 }
 
 bootstrap().catch((error) => {

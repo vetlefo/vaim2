@@ -1,6 +1,26 @@
 # Changelog
 
+## [0.1.1] - 2025-01-22
+### Fixed
+- Fixed health check endpoint to use correct path `/api/v1/monitoring/health`
+- Updated Docker healthcheck configuration to use correct endpoint
+- Added detailed health status including Redis and provider availability
+- Fixed health check URL display in logs
+
+### Added
+- Enhanced monitoring with Redis connection status
+- Provider availability checks in health endpoint
+- Real-time metrics for service health
+
 ## [Unreleased]
+
+### Added
+- Environment configuration alignment with other services:
+  - Neo4j connection using shared auth-neo4j instance
+  - Redis configuration aligned with central redis instance
+  - JWT secret sharing for consistent authentication
+  - Port configuration standardized to 3003
+  - Environment variable naming conventions standardized
 
 ### Changed
 - Consolidated OpenRouter provider implementation for better maintainability
