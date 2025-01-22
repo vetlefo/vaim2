@@ -1,10 +1,9 @@
 import { Module } from '@nestjs/common';
 import { PrometheusService } from './prometheus.service';
-import { ConfigModule } from '../config/config.module';
+import { AuditService } from './audit.service';
 
 @Module({
-  imports: [ConfigModule],
-  providers: [PrometheusService],
-  exports: [PrometheusService],
+  providers: [PrometheusService, AuditService],
+  exports: [PrometheusService, AuditService],
 })
 export class MonitoringModule {}

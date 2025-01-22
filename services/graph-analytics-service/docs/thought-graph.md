@@ -149,13 +149,13 @@ await thoughtGraph.reviseThought({
    - Concurrent access
    - Memory usage
 
-## Monitoring
+## Monitoring ([Full Details](monitoring.md))
 
-- Prometheus metrics for graph operations
-- Performance monitoring
-- Usage analytics
-- Error tracking
-
+- Prometheus metrics integration with [Phase 3 security controls](../phases/phase3.md#security)
+- Real-time performance monitoring
+- Granular usage analytics
+- Error tracking with HPC integration
+- Audit logging aligned with RBAC policies
 ## Documentation Structure
 
 - This technical implementation guide

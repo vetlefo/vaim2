@@ -15,6 +15,27 @@ export class PrometheusService {
     this.registry.setDefaultLabels({
       app: 'graph-analytics-service',
     });
+
+    // Register metrics from monitoring.md spec
+    this.registerMetric(
+      'vaim_graph_operations_duration',
+      'Duration of graph operations in seconds',
+      ['operation_type'],
+      'histogram'
+    );
+
+    this.registerMetric(
+      'vaim_llm_integration_errors',
+      'Count of LLM service integration errors',
+      ['error_code'],
+      'counter'
+    );
+  }
+
+  trackOperation<T>(operation: string, func: () => Promise<T>): Promise<T> {
+    const timer = this.metrics.get('vaim_graph_operations_duration') as Histogram;
+    const end = timer.startTimer({ operation_type: operation });
+    return func().finally(() => end());
   }
 
   registerMetric(
