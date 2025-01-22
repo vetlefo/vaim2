@@ -16,6 +16,11 @@
   - ✅ Core UI Components (Sidebar, Toolbar, Modals)
   - ✅ Redux Store & Type System
   - ✅ Custom Hooks for Graph Management
+  - ✅ Testing Infrastructure & Guidelines
+    - Unit Testing Framework
+    - Integration Tests
+    - E2E Testing Setup
+    - Performance Benchmarks
   - 🔄 Performance Optimization
   - 🔄 Advanced Visualization Features
   - 🔄 Enhanced LLM Integration
@@ -52,6 +57,11 @@ Focus: Advanced Analytics Implementation
 - [Implementation Roadmap](implementation/roadmap.md)
 
 ### Services
+
+#### UI Service 🚀
+- [README](services/ui-service/README.md) - UI service overview
+- [Testing Guidelines](services/ui-service/docs/testing-guidelines.md) - Comprehensive testing strategy
+- [Implementation Status](implementation/phase3.5-prototype.md) - Current implementation details
 
 #### Auth Service ✅
 - [README](services/auth-service/README.md) - Authentication service overview

@@ -19,8 +19,12 @@ const graphSlice = createSlice({
     setCyInstance: (state, action: PayloadAction<Core | null>) => {
       state.cyInstance = action.payload;
     },
-    addNode: (state, action: PayloadAction<GraphNode>) => {
-      state.nodes.push(action.payload);
+    addNode: (state, action: PayloadAction<Omit<GraphNode, 'id'>>) => {
+      const newNode: GraphNode = {
+        id: crypto.randomUUID(),
+        ...action.payload
+      };
+      state.nodes.push(newNode);
     },
     removeNode: (state, action: PayloadAction<string>) => {
       state.nodes = state.nodes.filter(node => node.id !== action.payload);

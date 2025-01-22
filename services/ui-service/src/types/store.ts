@@ -9,6 +9,10 @@ export interface GraphNode {
     metadata: Record<string, unknown>;
     confidence?: number;
   };
+  position?: {
+    x: number;
+    y: number;
+  };
 }
 
 export interface GraphEdge {

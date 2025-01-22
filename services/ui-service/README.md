@@ -1,118 +1,147 @@
-# VAIM2 UI Service
+# UI Service
 
-The UI service provides a modern, real-time collaborative interface for the VAIM2 platform. It features a graph-based visualization system with LLM integration and advanced collaboration features.
+## Overview
+The UI service provides a graph-centric interface for VAIM2, enabling real-time collaboration and visualization of complex knowledge networks. It integrates with LLMs, HPC, and advanced analytics to provide an intuitive and powerful user experience.
 
 ## Features
 
-- Graph-centric visualization using Cytoscape.js
-- Real-time collaboration with cursor and selection synchronization
-- LLM-powered chat interface with context awareness
-- Dynamic layout management
-- Theme customization
-- Performance monitoring and metrics
+### Core Components ✅
+- Graph Canvas (Cytoscape.js)
+- Real-time Collaboration
+- Redux State Management
+- WebSocket Integration
+- Custom React Hooks
 
-## Tech Stack
+### Visualization Features
+- Node/Edge Creation ✅
+- Interactive Layout ✅
+- Drag-and-Drop Support ✅
+- Zoom/Pan Controls ✅
+- Custom Styling 🚧
 
-- React + TypeScript
-- Redux Toolkit for state management
-- Cytoscape.js for graph visualization
-- Socket.io for real-time collaboration
-- Tailwind CSS for styling
-- Vite for development and building
+### Collaboration Features
+- Real-time Updates ✅
+- Multi-user Editing ✅
+- Presence Indicators 🚧
+- Version Control 🚧
+
+### Integration Features
+- LLM Integration 🚧
+- HPC Task Management 🚧
+- Analytics Visualization 🚧
 
 ## Getting Started
 
-1. Install dependencies:
+### Prerequisites
+- Node.js >= 18
+- npm >= 9
+- Redis (for session management)
+
+### Installation
 ```bash
+# Install dependencies
 npm install
+
+# Create environment file
+cp .env.example .env
+
+# Start development server
+npm run dev:all
 ```
 
-2. Start the development server:
+### Development Scripts
 ```bash
+# Start UI development server
 npm run dev
-```
 
-3. Build for production:
-```bash
+# Start WebSocket server
+npm run server
+
+# Start both UI and WebSocket servers
+npm run dev:all
+
+# Run tests
+npm run test
+npm run test:coverage
+npm run test:e2e
+
+# Build for production
 npm run build
 ```
 
-## Project Structure
+## Testing Requirements
+See [Testing Guidelines](docs/testing-guidelines.md) for detailed testing requirements and examples.
 
+### Coverage Targets
+- Components: 90%
+- Hooks: 95%
+- Store: 100%
+- Utils: 100%
+
+### Test Types
+1. Unit Tests
+   - Components
+   - Hooks
+   - Store
+   - Utils
+
+2. Integration Tests
+   - Component Interactions
+   - Socket Communication
+   - State Management
+
+3. E2E Tests
+   - Critical User Flows
+   - Graph Operations
+   - Collaboration Features
+
+4. Performance Tests
+   - Rendering Performance
+   - Network Operations
+   - State Updates
+
+## Architecture
+
+### Component Structure
 ```
 src/
-  ├── components/          # React components
-  │   ├── GraphCanvas/    # Graph visualization
-  │   ├── Sidebar/        # Application sidebar
-  │   ├── Toolbar/        # Main toolbar
-  │   ├── ContextMenu/    # Context menu
-  │   ├── Modal/          # Modal dialogs
-  │   └── NotificationStack/ # Notifications
-  ├── hooks/              # Custom React hooks
-  ├── store/              # Redux store and slices
-  │   └── slices/         # Redux slices
-  ├── types/              # TypeScript type definitions
-  ├── App.tsx            # Root component
-  └── main.tsx           # Entry point
+├── components/
+│   ├── GraphCanvas/     # Core visualization
+│   ├── Toolbar/         # Graph operations
+│   ├── Sidebar/         # Context panels
+│   └── Modal/           # Overlays
+├── hooks/
+│   ├── useGraphLayout/  # Layout management
+│   ├── useGraphEvents/  # Event handling
+│   └── useCollaboration/# Real-time features
+├── store/
+│   ├── graphSlice/      # Graph state
+│   ├── uiSlice/         # UI state
+│   └── collaborationSlice/ # Collaboration state
+└── services/
+    └── socket/          # WebSocket client
 ```
 
-## Development
+### State Management
+- Redux for global state
+- React Context for local state
+- WebSocket for real-time updates
 
-### Commands
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint
-- `npm run test` - Run tests
-- `npm run test:coverage` - Run tests with coverage
-
-### Code Style
-
-- Follow TypeScript best practices
-- Use functional components with hooks
-- Maintain proper component documentation
-- Write unit tests for components and hooks
-
-## Integration Points
-
-### LLM Service
-
-The UI integrates with the LLM service for:
-- Context-aware chat
-- Graph node suggestions
-- Bridging concept generation
-
-### Graph Analytics Service
-
-Connects to the graph service for:
-- Node and edge data
-- Graph analytics results
-- Layout computations
-
-### Collaboration Features
-
-Real-time collaboration is handled through:
-- WebSocket connections
-- User presence tracking
-- Cursor and selection synchronization
-- Change propagation
-
-## Performance Considerations
-
-- Lazy loading of components
-- Efficient graph rendering
-- Debounced real-time updates
-- Optimized Redux state management
+### Performance Considerations
+- Virtualization for large graphs
+- Batch updates for state changes
+- Optimized rendering cycles
 
 ## Contributing
+1. Create feature branch
+2. Add tests for new features
+3. Ensure all tests pass
+4. Submit pull request
 
-1. Create a feature branch
-2. Make your changes
-3. Write/update tests
-4. Update documentation
-5. Submit a pull request
+## Documentation
+- [Testing Guidelines](docs/testing-guidelines.md)
+- [Implementation Status](../../implementation/phase3.5-prototype.md)
+- [API Documentation](docs/api.md)
 
 ## License
-
-Private - VAIM2 Platform
+MIT
