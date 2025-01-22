@@ -125,3 +125,5 @@ docker-compose -f docker-compose.test.yml up -d
 - Document all assumptions
 - Include error handling examples
 - Add monitoring hooks
+- Use powershell syntax instead of &&
+- Prepare and push all our changes and documentation to github master when done
