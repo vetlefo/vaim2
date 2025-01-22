@@ -37,6 +37,7 @@ The OpenRouter provider serves as our primary implementation, offering:
 - Detailed model comparison data
 - Consolidated provider implementation for better maintainability
 - Proper handling of streaming errors and cleanup
+- Fallback to provider API through their system
 
 ### Model Capabilities System
 
