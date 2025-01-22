@@ -4,7 +4,7 @@ services:
   auth-service:
     build: ./services/auth-service
     ports:
-      - "3001:3000"
+      - "1337:3000"
     depends_on:
       - auth-postgres
       - auth-neo4j
@@ -129,6 +129,10 @@ volumes:
 
 networks:
   auth-network:
+    name: auth-network
     driver: bridge
   analytics-network:
+    driver: bridge
+  llm-network:
+    name: llm-network
     driver: bridge

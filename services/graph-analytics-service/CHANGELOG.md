@@ -1,5 +1,26 @@
 # Changelog
 
+## [Unreleased]
+### Added
+- Environment configuration alignment with other services:
+  - Neo4j connection using shared auth-neo4j instance (bolt://auth-neo4j:7687)
+    - Verified healthy Neo4j enterprise instance with GDS plugins
+    - Confirmed bolt connectivity on port 7688
+  - Redis configuration aligned with central redis instance
+    - Verified Redis connectivity on port 6380
+    - Persistence enabled with appendonly
+  - JWT secret sharing for consistent authentication
+  - Port mappings adjusted to avoid conflicts (3002:3002)
+  - Kafka broker configuration standardized
+    - Verified Kafka connectivity on port 9093
+    - Zookeeper connection established on port 2182
+    - Broker ID and listener configuration validated
+
+### Changed
+- Updated Neo4j connection to use shared auth-neo4j instance
+- Aligned Redis configuration with other services
+- Standardized environment variable naming across services
+
 ## [0.3.0] - 2025-01-22
 ### Added
 - Comprehensive monitoring system implementation
