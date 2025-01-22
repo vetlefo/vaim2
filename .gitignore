@@ -1,31 +1,39 @@
 # Dependency directories
 node_modules/
 dist/
-build/
-.coverage/
 
 # Environment files
 .env
-.env.*
-!.env.example
+.env.local
+.env.*.local
+
+# Build output
+build/
+out/
 
 # Logs
 logs/
 *.log
 npm-debug.log*
 
-# OS generated files
-Thumbs.db
-.DS_Store
-
-# IDE
-.vscode/
+# IDE files
 .idea/
+.vscode/
+*.swp
+*.swo
 
-# Testing
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+combined_output.txt
+project_context.txt
+script*.py
+
+# Test coverage
 coverage/
-junit.xml
 
-# Package manager specific
-package-lock.json
-yarn.lock
+# Temporary package files
+/package.json
+/package-lock.json
