@@ -1,156 +1,173 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable } from '@nestjs/common';
 import { RedisService } from '../redis/redis.service';
+import { PrometheusService } from '../monitoring/prometheus.service';
+import { LLMProvider, LLMResponse } from '../interfaces/provider.interface';
 import { LLMProviderFactory } from '../providers/provider.factory';
 import {
-  ChatMessage,
-  LLMError,
-  LLMErrorType,
-  LLMResponse,
-  LLMRequestOptions,
-} from '@app/interfaces/provider.interface';
+  CompletionOptionsInput,
+  ChatMessageInput,
+  CompletionResponse,
+  StreamCompletionResponse
+} from './dto/completion.dto';
 
 @Injectable()
-export class LLMService implements OnModuleInit {
-  private readonly logger = new Logger(LLMService.name);
-  private readonly defaultProvider: string;
-  private readonly defaultModel: string;
-  private readonly cacheEnabled: boolean;
-  private readonly cacheTTL: number;
-
+export class LLMService {
   constructor(
-    private readonly configService: ConfigService,
-    private readonly providerFactory: LLMProviderFactory,
     private readonly redisService: RedisService,
-  ) {
-    this.defaultProvider = this.configService.get<string>('DEFAULT_LLM_PROVIDER', 'openrouter');
-    this.defaultModel = this.configService.get<string>('DEFAULT_MODEL', 'deepseek/deepseek-r1');
-    this.cacheEnabled = this.configService.get<boolean>('CACHE_ENABLED', true);
-    this.cacheTTL = this.configService.get<number>('REDIS_CACHE_TTL', 3600);
-  }
-
-  async onModuleInit() {
-    await this.healthCheck();
-  }
+    private readonly prometheusService: PrometheusService,
+    private readonly providerFactory: LLMProviderFactory,
+  ) {}
 
   async complete(
-    messages: ChatMessage[],
-    options?: LLMRequestOptions,
-  ): Promise<LLMResponse> {
-    const cacheKey = this.generateCacheKey(messages, options);
-    
-    if (this.cacheEnabled) {
-      const cached = await this.getCachedResponse(cacheKey);
-      if (cached) {
-        this.logger.debug(`Cache hit for key: ${cacheKey}`);
-        return cached;
-      }
-    }
+    messages: ChatMessageInput[],
+    options: CompletionOptionsInput = {}
+  ): Promise<CompletionResponse> {
+    const provider = options.model?.split('/')[0] || 'openrouter';
+    const startTime = Date.now();
+    this.prometheusService.startRequest(provider);
 
     try {
-      const provider = await this.getProvider(options?.model);
-      const response = await provider.complete(messages, options);
-
-      if (this.cacheEnabled) {
-        await this.cacheResponse(cacheKey, response);
+      // Check cache first
+      const cacheKey = this.generateCacheKey(messages, provider);
+      const cachedResponse = await this.redisService.get(cacheKey);
+      
+      if (cachedResponse) {
+        this.prometheusService.recordCacheHit();
+        this.prometheusService.endRequest(provider, 'success', (Date.now() - startTime) / 1000);
+        return JSON.parse(cachedResponse);
       }
 
+      this.prometheusService.recordCacheMiss();
+      this.prometheusService.recordProviderRequest(provider);
+
+      // Get the appropriate provider implementation
+      const llmProvider: LLMProvider = this.providerFactory.getProvider(provider);
+      
+      // Make the actual request
+      const response = await llmProvider.complete(messages, options);
+
+      // Record token usage
+      if (response.usage) {
+        this.prometheusService.recordTokenUsage(provider, 'prompt', response.usage.promptTokens);
+        this.prometheusService.recordTokenUsage(provider, 'completion', response.usage.completionTokens);
+      }
+
+      // Cache the response
+      await this.redisService.set(
+        cacheKey,
+        JSON.stringify(response),
+        60 * 60 // 1 hour cache
+      );
+
+      // Update cache metrics
+      const cacheStats = await this.redisService.getStats();
+      this.prometheusService.updateCacheMetrics(
+        cacheStats.keyCount,
+        cacheStats.memoryUsage
+      );
+
+      this.prometheusService.endRequest(provider, 'success', (Date.now() - startTime) / 1000);
       return response;
+
     } catch (error) {
-      this.logger.error(`Error in complete: ${error.message}`, error.stack);
-      throw this.handleError(error);
+      this.prometheusService.recordProviderError(provider, error.name || 'UnknownError');
+      this.prometheusService.endRequest(provider, 'error', (Date.now() - startTime) / 1000);
+      throw error;
     }
   }
 
   async completeStream(
-    messages: ChatMessage[],
-    options?: LLMRequestOptions,
-  ): Promise<AsyncIterableIterator<LLMResponse>> {
+    messages: ChatMessageInput[],
+    options: CompletionOptionsInput = {}
+  ): Promise<AsyncIterableIterator<StreamCompletionResponse>> {
+    const provider = options.model?.split('/')[0] || 'openrouter';
+    const llmProvider = this.providerFactory.getProvider(provider);
+    
+    if (!llmProvider.completeStream) {
+      throw new Error(`Provider ${provider} does not support streaming`);
+    }
+
+    const startTime = Date.now();
+    this.prometheusService.startRequest(provider);
+
     try {
-      const provider = await this.getProvider(options?.model);
-      return await provider.completeStream(messages, options);
+      const stream = await llmProvider.completeStream(messages, options);
+      return this.wrapStream(stream, startTime, provider);
     } catch (error) {
-      this.logger.error(`Error in completeStream: ${error.message}`, error.stack);
-      throw this.handleError(error);
+      this.prometheusService.recordProviderError(provider, error.name || 'UnknownError');
+      this.prometheusService.endRequest(provider, 'error', (Date.now() - startTime) / 1000);
+      throw error;
     }
   }
 
-  async healthCheck(): Promise<{ [key: string]: boolean }> {
+  private async *wrapStream(
+    stream: AsyncIterableIterator<LLMResponse>,
+    startTime: number,
+    provider: string
+  ): AsyncIterableIterator<StreamCompletionResponse> {
     try {
-      return await this.providerFactory.healthCheck();
+      for await (const chunk of stream) {
+        yield {
+          text: chunk.text,
+          metadata: {
+            model: chunk.metadata.model,
+            provider: chunk.metadata.provider,
+            latency: Date.now() - startTime,
+            timestamp: new Date().toISOString(),
+          },
+        };
+      }
+      this.prometheusService.endRequest(provider, 'success', (Date.now() - startTime) / 1000);
     } catch (error) {
-      this.logger.error(`Health check failed: ${error.message}`, error.stack);
-      throw this.handleError(error);
+      this.prometheusService.recordProviderError(provider, error.name || 'UnknownError');
+      this.prometheusService.endRequest(provider, 'error', (Date.now() - startTime) / 1000);
+      throw error;
     }
   }
 
-  listProviders(): string[] {
+  async listProviders(): Promise<string[]> {
     return this.providerFactory.listProviders();
   }
 
-  listModels(provider: string): string[] {
-    return this.providerFactory.listModels(provider);
+  async listModels(provider?: string): Promise<string[]> {
+    if (provider) {
+      return this.providerFactory.listModels(provider);
+    }
+    
+    // If no provider specified, get models from all providers
+    const providers = await this.listProviders();
+    const allModels: string[] = [];
+    
+    for (const provider of providers) {
+      const models = this.providerFactory.listModels(provider);
+      allModels.push(...models);
+    }
+    
+    return allModels;
   }
 
-  private async getProvider(model?: string) {
-    if (model) {
-      // Extract provider from model name (e.g., 'deepseek/deepseek-r1' -> 'deepseek')
-      const providerName = model.split('/')[0];
+  async healthCheck(): Promise<Record<string, any>> {
+    const providers = await this.listProviders();
+    const health: Record<string, any> = {};
+
+    for (const provider of providers) {
       try {
-        return this.providerFactory.getProvider(providerName);
+        const llmProvider = this.providerFactory.getProvider(provider);
+        health[provider] = await llmProvider.healthCheck();
       } catch (error) {
-        // If provider-specific model fails, fall back to OpenRouter
-        this.logger.warn(`Failed to get provider for model ${model}, falling back to OpenRouter`);
-        return this.providerFactory.getProvider('openrouter');
+        health[provider] = {
+          status: 'error',
+          error: error.message,
+        };
       }
     }
-    return this.providerFactory.getProvider(this.defaultProvider);
+
+    return health;
   }
 
-  private generateCacheKey(messages: ChatMessage[], options?: LLMRequestOptions): string {
-    const key = {
-      messages,
-      options: {
-        model: options?.model || this.defaultModel,
-        temperature: options?.temperature || 0.7,
-        maxTokens: options?.maxTokens || 4096,
-        topP: options?.topP || 1,
-        frequencyPenalty: options?.frequencyPenalty,
-        presencePenalty: options?.presencePenalty,
-        stop: options?.stop,
-      },
-    };
-    return `llm:${JSON.stringify(key)}`;
-  }
-
-  private async getCachedResponse(key: string): Promise<LLMResponse | null> {
-    try {
-      const cached = await this.redisService.get(key);
-      return cached ? JSON.parse(cached) : null;
-    } catch (error) {
-      this.logger.warn(`Cache retrieval failed: ${error.message}`);
-      return null;
-    }
-  }
-
-  private async cacheResponse(key: string, response: LLMResponse): Promise<void> {
-    try {
-      await this.redisService.set(key, JSON.stringify(response), this.cacheTTL);
-    } catch (error) {
-      this.logger.warn(`Cache storage failed: ${error.message}`);
-    }
-  }
-
-  private handleError(error: any): LLMError {
-    if (error instanceof LLMError) {
-      return error;
-    }
-
-    return new LLMError(
-      LLMErrorType.UNKNOWN,
-      `Unexpected error: ${error.message}`,
-      this.defaultProvider,
-      error,
-    );
+  private generateCacheKey(messages: ChatMessageInput[], provider: string): string {
+    // Create a deterministic cache key from messages and provider
+    const messageString = JSON.stringify(messages);
+    return `llm:${provider}:${Buffer.from(messageString).toString('base64')}`;
   }
 }

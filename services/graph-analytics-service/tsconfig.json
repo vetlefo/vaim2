@@ -22,7 +22,8 @@
       "@config/*": ["src/config/*"],
       "@analytics/*": ["src/analytics/*"],
       "@integration/*": ["src/integration/*"],
-      "@common/*": ["src/common/*"]
+      "@common/*": ["src/common/*"],
+      "@neo4j/*": ["src/neo4j/*"]
     }
   },
   "include": ["src/**/*"],

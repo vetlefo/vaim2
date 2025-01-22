@@ -8,7 +8,7 @@ import {
   LLMErrorType,
   OpenRouterConfig,
   ModelCapabilities,
-} from '@app/interfaces/provider.interface';
+} from '../interfaces/provider.interface';
 
 @Injectable()
 export class LLMProviderFactory implements ProviderFactory, OnModuleInit {
@@ -21,10 +21,6 @@ export class LLMProviderFactory implements ProviderFactory, OnModuleInit {
     this.defaultProvider = this.configService.get<string>('DEFAULT_LLM_PROVIDER', 'openrouter');
     this.initializeModelMap();
     this.initializeModelCapabilities();
-  }
-
-  getModelCapabilities(model: string): ModelCapabilities | undefined {
-    return this.modelCapabilities.get(model);
   }
 
   private initializeModelMap() {

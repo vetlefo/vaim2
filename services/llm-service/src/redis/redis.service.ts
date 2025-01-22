@@ -8,6 +8,13 @@ interface RedisOptions {
   db?: number;
 }
 
+interface RedisInfo {
+  keyspace_hits?: string;
+  used_memory?: string;
+  connected_clients?: string;
+  total_connections_received?: string;
+}
+
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RedisService.name);
@@ -128,6 +135,40 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     } catch (error) {
       this.logger.error('Error pinging Redis:', error);
       return false;
+    }
+  }
+
+  async info(): Promise<RedisInfo> {
+    try {
+      const info = await this.client.info();
+      const infoObj: RedisInfo = {};
+      
+      info.split('\n').forEach(line => {
+        const [key, value] = line.split(':');
+        if (key && value) {
+          infoObj[key.trim()] = value.trim();
+        }
+      });
+
+      return infoObj;
+    } catch (error) {
+      this.logger.error('Error getting Redis info:', error);
+      throw error;
+    }
+  }
+
+  async getStats(): Promise<{ keyCount: number; memoryUsage: number }> {
+    try {
+      const info = await this.info();
+      const keys = await this.keys('*');
+      
+      return {
+        keyCount: keys.length,
+        memoryUsage: parseInt(info.used_memory || '0', 10),
+      };
+    } catch (error) {
+      this.logger.error('Error getting Redis stats:', error);
+      throw error;
     }
   }
 }

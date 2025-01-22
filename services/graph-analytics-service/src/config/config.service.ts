@@ -107,9 +107,9 @@ export class ConfigService {
   }
 
   // Helper method to get number values from config
-  getNumber(key: string, defaultValue?: number): number {
+  getNumber(key: string, defaultValue: number): number {
     const value = this.configService.get<number>(key);
-    return value ?? defaultValue;
+    return value !== undefined ? value : defaultValue;
   }
 
   // Helper method to validate required configuration

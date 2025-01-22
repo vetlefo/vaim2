@@ -6,26 +6,29 @@ import { RedisService } from '../redis/redis.service';
 describe('RateLimitService', () => {
   let service: RateLimitService;
   let redisService: RedisService;
+  let configService: { get: jest.Mock };
 
   beforeEach(async () => {
+    configService = {
+      get: jest.fn().mockImplementation((key: string, defaultValue?: any) => {
+        const config = {
+          RATE_LIMIT_WINDOW: 60000,
+          RATE_LIMIT_MAX_REQUESTS: 100,
+          RATE_LIMIT_PROVIDER_WINDOW: 3600000,
+          RATE_LIMIT_PROVIDER_MAX_REQUESTS: 1000,
+          CACHE_TTL: 3600,
+          CACHE_STREAMING_ENABLED: false,
+        };
+        return config[key] ?? defaultValue;
+      }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         RateLimitService,
         {
           provide: ConfigService,
-          useValue: {
-            get: jest.fn((key: string) => {
-              const config = {
-                RATE_LIMIT_WINDOW: 60000,
-                RATE_LIMIT_MAX_REQUESTS: 100,
-                RATE_LIMIT_PROVIDER_WINDOW: 3600000,
-                RATE_LIMIT_PROVIDER_MAX_REQUESTS: 1000,
-                CACHE_TTL: 3600,
-                CACHE_STREAMING_ENABLED: false,
-              };
-              return config[key];
-            }),
-          },
+          useValue: configService,
         },
         {
           provide: RedisService,
@@ -86,7 +89,11 @@ describe('RateLimitService', () => {
     });
 
     it('should not cache response when streaming is enabled', async () => {
-      jest.spyOn(ConfigService.prototype, 'get').mockReturnValue(true);
+      configService.get.mockImplementationOnce((key: string) => {
+        if (key === 'CACHE_STREAMING_ENABLED') return true;
+        return undefined;
+      });
+      
       await service.cacheResponse('test prompt', 'openrouter', 'test response');
       expect(redisService.set).not.toHaveBeenCalled();
     });

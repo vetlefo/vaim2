@@ -158,6 +158,15 @@ export default class DeepSeekProvider implements LLMProvider {
     }
   }
 
+  async listModels(): Promise<string[]> {
+    try {
+      const response = await this.client.get('/models');
+      return response.data.data.map((model: any) => model.id);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   private handleError(error: any): LLMError {
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;

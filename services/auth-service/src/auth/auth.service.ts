@@ -49,6 +49,23 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
+  private getRefreshTokenExpirationSeconds(): number {
+    const refreshExpiration = this.configService.get<string>('REFRESH_TOKEN_EXPIRATION', '7d');
+    const DEFAULT_DAYS = 7;
+    const SECONDS_PER_DAY = 24 * 60 * 60;
+
+    try {
+      if (refreshExpiration.endsWith('d')) {
+        const days = Number(refreshExpiration.slice(0, -1));
+        return isNaN(days) ? DEFAULT_DAYS * SECONDS_PER_DAY : days * SECONDS_PER_DAY;
+      }
+      const seconds = Number(refreshExpiration);
+      return isNaN(seconds) ? DEFAULT_DAYS * SECONDS_PER_DAY : seconds;
+    } catch {
+      return DEFAULT_DAYS * SECONDS_PER_DAY;
+    }
+  }
+
   private async storeRefreshToken(userId: string, tokenId: string, expiresIn: number) {
     const key = `refresh_token:${userId}:${tokenId}`;
     await this.redisService.storeRefreshToken(key, true, expiresIn * 1000);
@@ -81,6 +98,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    if (!user.password) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
     const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
 
     if (!isPasswordValid) {
@@ -101,8 +122,8 @@ export class AuthService {
     // Store refresh token in Redis
     const decoded = this.jwtService.decode(refreshToken) as TokenPayload;
     if (decoded.jti) {
-      const refreshExpiration = parseInt(this.configService.get<string>('REFRESH_TOKEN_EXPIRATION', '7d'));
-      await this.storeRefreshToken(user.id, decoded.jti, refreshExpiration * 24 * 60 * 60); // Convert days to seconds
+      const expirationInSeconds = this.getRefreshTokenExpirationSeconds();
+      await this.storeRefreshToken(user.id, decoded.jti, expirationInSeconds);
     }
 
     // Remove password from user object
@@ -133,8 +154,8 @@ export class AuthService {
     // Store new refresh token
     const decoded = this.jwtService.decode(refreshToken) as TokenPayload;
     if (decoded.jti) {
-      const refreshExpiration = parseInt(this.configService.get<string>('REFRESH_TOKEN_EXPIRATION', '7d'));
-      await this.storeRefreshToken(payload.sub, decoded.jti, refreshExpiration * 24 * 60 * 60);
+      const expirationInSeconds = this.getRefreshTokenExpirationSeconds();
+      await this.storeRefreshToken(payload.sub, decoded.jti, expirationInSeconds);
     }
 
     return {

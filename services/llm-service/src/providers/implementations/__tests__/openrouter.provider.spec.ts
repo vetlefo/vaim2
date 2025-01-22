@@ -1,11 +1,11 @@
 import { Test } from '@nestjs/testing';
 import OpenRouterProvider from '../openrouter.provider';
-import { 
-  LLMError, 
-  LLMErrorType, 
+import {
+  LLMError,
+  LLMErrorType,
   OpenRouterConfig,
-  ChatMessage 
-} from '@app/interfaces/provider.interface';
+  ChatMessage
+} from '../../../interfaces/provider.interface';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 

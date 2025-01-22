@@ -8,7 +8,7 @@ import {
   LLMError,
   LLMErrorType,
   ModelCapabilities,
-} from '@app/interfaces/provider.interface';
+} from '../../interfaces/provider.interface';
 
 interface ModelParameters {
   temperature_p50: number;
@@ -344,7 +344,55 @@ export default class OpenRouterProvider implements LLMProvider {
         responseType: 'stream',
       });
 
-      return this.processStream(response.data, startTime, model);
+      const iterator = {
+        [Symbol.asyncIterator]() {
+          return this;
+        },
+        async next() {
+          try {
+            const chunk = await response.data.read();
+            if (!chunk) {
+              return { done: true, value: undefined };
+            }
+
+            const lines = chunk.toString().split('\n');
+            for (const line of lines) {
+              if (line.trim() === '' || !line.startsWith('data: ')) continue;
+
+              try {
+                const data = JSON.parse(line.slice(6));
+                if (data.choices?.[0]?.delta?.content) {
+                  return {
+                    done: false,
+                    value: {
+                      text: data.choices[0].delta.content,
+                      usage: {
+                        promptTokens: 0,
+                        completionTokens: 0,
+                        totalTokens: 0,
+                      },
+                      metadata: {
+                        model: model,
+                        provider: 'openrouter',
+                        latency: Date.now() - startTime,
+                        timestamp: new Date().toISOString(),
+                        capabilities: this.modelCapabilities.get(model),
+                      },
+                    },
+                  };
+                }
+              } catch (e) {
+                continue;
+              }
+            }
+            return { done: true, value: undefined };
+          } catch (error) {
+            throw this.handleError(error);
+          }
+        },
+      };
+
+      return Promise.resolve(iterator);
     } catch (error) {
       throw this.handleError(error);
     }
@@ -386,13 +434,11 @@ export default class OpenRouterProvider implements LLMProvider {
               };
             }
           } catch (e) {
-            // Ignore parse errors for incomplete chunks
             continue;
           }
         }
       }
 
-      // Handle any remaining data in buffer
       if (buffer.trim() !== '') {
         try {
           const data = JSON.parse(buffer.startsWith('data: ') ? buffer.slice(6) : buffer);
