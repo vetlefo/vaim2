@@ -52,7 +52,6 @@ Focus: Advanced Monitoring Implementation
 - [README](services/graph-analytics-service/README.md)
 - [Data Pipeline](services/graph-analytics-service/docs/data-pipeline.md)
 - [Testing Guide](services/graph-analytics-service/docs/testing.md)
-- [Graph-Enhanced Sequential Thinking](services/graph-analytics-service/docs/thought-ops.md) - Chain-of-thought implementation
 
 #### LLM Service 🔄
 - [README](services/llm-service/README.md) - Service overview
