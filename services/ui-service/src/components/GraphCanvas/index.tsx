@@ -31,17 +31,17 @@ const GraphCanvas: React.FC = () => {
           selector: 'node',
           style: {
             'background-color': '#0ea5e9',
-            'label': 'data(label)',
+            'label': 'data(content)',
             'color': '#1e293b',
-            'font-size': '12px',
+            'font-size': 12,
             'text-valign': 'center',
             'text-halign': 'center',
-            'width': '40px',
-            'height': '40px',
-            'border-width': '2px',
+            'width': 40,
+            'height': 40,
+            'border-width': 2,
             'border-color': '#e2e8f0',
             'transition-property': 'background-color, border-color, width, height',
-            'transition-duration': '0.2s'
+            'transition-duration': 200
           }
         },
         {
@@ -52,8 +52,8 @@ const GraphCanvas: React.FC = () => {
             'target-arrow-color': '#94a3b8',
             'target-arrow-shape': 'triangle',
             'curve-style': 'bezier',
-            'label': 'data(label)',
-            'font-size': '10px',
+            'label': 'data(content)',
+            'font-size': 10,
             'text-rotation': 'autorotate',
             'text-margin-y': -10
           }
@@ -63,9 +63,9 @@ const GraphCanvas: React.FC = () => {
           style: {
             'background-color': '#0284c7',
             'border-color': '#0ea5e9',
-            'border-width': '3px',
-            'width': '45px',
-            'height': '45px'
+            'border-width': 3,
+            'width': 45,
+            'height': 45
           }
         },
         {
@@ -73,16 +73,15 @@ const GraphCanvas: React.FC = () => {
           style: {
             'background-color': '#0369a1',
             'border-color': '#0284c7',
-            'border-width': '3px',
-            'width': '45px',
-            'height': '45px'
+            'border-width': 3,
+            'width': 45,
+            'height': 45
           }
         }
       ],
       layout: {
         name: 'grid'
       },
-      wheelSensitivity: 0.2,
       minZoom: 0.2,
       maxZoom: 3
     });

@@ -18,6 +18,7 @@ const ChatPanel: React.FC = () => {
       type: 'thought',
       data: {
         content: message.trim(),
+        label: message.trim(),
         metadata: {
           timestamp: Date.now(),
           source: 'chat'
