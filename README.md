@@ -1,139 +1,132 @@
-# VAIM2 - Advanced AI Integration Platform
+# VAIM2 - Visual Agentic Idea Manager
 
-A comprehensive microservices platform for integrating and managing AI services with advanced graph analytics capabilities.
-
-## Project Overview
-
-VAIM2 is a scalable, secure platform built on modern microservices architecture, designed to:
-- Provide unified access to multiple LLM providers
-- Enable sophisticated graph-based analytics
-- Ensure secure authentication and authorization
-- Support high-performance computing integration
-- Maintain quantum-readiness for future capabilities
-
-## Architecture
-
-### Core Services
-
-1. **Auth Service** ✅
-   - OAuth2 authentication
-   - Role-based access control
-   - JWT token management
-   - [Documentation](services/auth-service/README.md)
-
-2. **Graph Analytics Service** ✅
-   - Neo4j-based graph processing
-   - Real-time analytics pipeline
-   - Data transformation workflows
-   - Comprehensive monitoring system
-   - [Documentation](services/graph-analytics-service/README.md)
-
-3. **LLM Service** ✅
-   - Multi-provider LLM integration ✅
-   - Response streaming ✅
-   - Rate limiting and caching ✅
-   - Advanced monitoring ✅
-   - [Documentation](services/llm-service/README.md)
-
-### Key Features
-
-- Microservices architecture with Docker containerization ✅
-- GraphQL and REST API interfaces ✅
-- Real-time data processing pipeline ✅
-- Comprehensive security implementation ✅
-- Monitoring and observability ✅
-- High-performance computing capabilities ✅
-- Quantum-ready architecture design 🔄
-
-## Project Structure
-
-```
-.
-├── services/               # Microservices implementations
-│   ├── auth-service/      # Authentication service
-│   ├── graph-analytics/   # Graph processing service
-│   └── llm-service/       # Language model service
-├── phases/                # Implementation phases
-├── implementation/        # Detailed implementation docs
-├── tools/                # Project tooling docs
-├── workflows/            # CI/CD and process flows
-└── research-corner/      # Experimental features
-```
-
-## Documentation
-
-Our documentation is organized into several key sections:
-
-1. [Documentation Index](DOCUMENTATION_INDEX.md) - Central reference for all documentation
-2. [Implementation Phases](phases/) - Step-by-step development roadmap
-3. [Service Documentation](services/) - Individual service details
-4. [Tools & Workflows](tools/) - Development and deployment guides
-5. [Security Guide](tools/secrets-management.md) - Security practices and configurations
+## Overview
+VAIM2 is a powerful knowledge management and visualization platform that integrates LLMs, HPC, and advanced analytics into an intuitive graph-based interface. It enables real-time collaboration and visualization of complex knowledge networks.
 
 ## Current Status
 
-### Completed Phases
-- **Phase 1** ✅ - Infrastructure foundations
-  - Core service architecture
-  - Docker containerization
-  - Base security implementation
+### Phase 3 ✅ (Complete)
+- LLM Service Enhancements
+  - Redis Cache Implementation
+  - REST & GraphQL API Implementation
+  - Security & Rate Limiting
+  - Testing Infrastructure
+  - Monitoring System
 
-- **Phase 2** ✅ - Core service implementation
-  - Auth service with OAuth2
-  - Graph analytics foundation
-  - Basic LLM integration
+### Phase 3.5 🚧 (In Progress)
+- UI Framework Implementation
+  - ✅ Graph Canvas Component
+  - ✅ Real-Time Collaboration System
+  - ✅ Core UI Components
+  - ✅ Redux Store & Type System
+  - ✅ Testing Infrastructure
+  - 🚧 Advanced Visualization Features
+  - 🚧 Enhanced LLM Integration
 
-- **Phase 3** ✅ - Service enhancement
-  - LLM service improvements
-    - Redis caching ✅
-    - Rate limiting ✅
-    - Provider integration ✅
-    - Monitoring system ✅
+### Next: Phase 4 📅
+Focus: Advanced Analytics Implementation
+- Machine Learning Integration
+- Advanced Graph Analytics
+- Predictive Modeling
+- Performance Optimization
 
-### Next Phase (Phase 4)
-- Advanced Analytics Implementation
-  - Machine Learning Integration
-  - Advanced Graph Analytics
-  - Predictive Modeling
-  - Performance Optimization
+## Services
 
-### Future Phases
-See [roadmap](ROADMAP.md) for detailed plans
+### UI Service 🚀
+- Graph-centric interface
+- Real-time collaboration
+- Advanced visualization
+- [Documentation](services/ui-service/README.md)
+- [Testing Guidelines](services/ui-service/docs/testing-guidelines.md)
 
-## Development
+### Auth Service ✅
+- Authentication & Authorization
+- OAuth2 Integration
+- Security Management
+- [Documentation](services/auth-service/README.md)
+
+### Graph Analytics Service ✅
+- Neo4j Integration
+- Advanced Analytics
+- Data Pipeline
+- [Documentation](services/graph-analytics-service/README.md)
+
+### LLM Service ✅
+- Model Integration
+- Caching System
+- Rate Limiting
+- [Documentation](services/llm-service/README.md)
+
+### NLP Service 🚧
+- Text Processing
+- Entity Recognition
+- Language Detection
+- [Documentation](services/nlp-service/README.md)
+
+## Getting Started
 
 ### Prerequisites
-- Node.js 18+
+- Node.js >= 18
+- npm >= 9
 - Docker & Docker Compose
-- Neo4j 5+ (with Graph Data Science library)
-- Redis 7+
+- Redis
+- Neo4j
 
-### Quick Start
+### Installation
 ```bash
 # Clone repository
 git clone https://github.com/yourusername/vaim2.git
+cd vaim2
 
 # Install dependencies
-cd vaim2 ; npm install
+npm install
 
 # Start development environment
 docker-compose up -d
-
-# Run tests
-npm test
+npm run dev
 ```
 
-### Environment Setup
-1. Copy `.env.example` to `.env` in each service directory
-2. Configure environment variables
-3. Follow service-specific setup in their respective READMEs
+### Development Scripts
+```bash
+# Start all services
+npm run dev
+
+# Run tests
+npm run test
+
+# Build for production
+npm run build
+```
+
+## Documentation
+- [Documentation Index](DOCUMENTATION_INDEX.md)
+- [Implementation Roadmap](implementation/roadmap.md)
+- [Phase 3.5 Prototype](implementation/phase3.5-prototype.md)
+- [Testing Guidelines](services/ui-service/docs/testing-guidelines.md)
+
+## Architecture
+- Microservices Architecture
+- Event-Driven Communication
+- Real-Time Collaboration
+- Graph-Based Storage
+- LLM Integration
+- HPC Support
+
+## Testing Requirements
+- Unit Tests: 90%+ coverage
+- Integration Tests
+- E2E Tests
+- Performance Tests
+- [Detailed Guidelines](services/ui-service/docs/testing-guidelines.md)
 
 ## Contributing
-
-1. Review the [contribution guidelines](CONTRIBUTING.md)
-2. Check the [development workflow](workflows/high-level-workflow.md)
-3. Follow our [security practices](tools/secrets-management.md)
+1. Fork the repository
+2. Create feature branch
+3. Add tests for new features
+4. Submit pull request
 
 ## License
+MIT
 
-This project is proprietary and confidential. All rights reserved.
+## Project Status
+See [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) for detailed status of each component.
