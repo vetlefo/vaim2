@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import axios, { AxiosInstance } from 'axios';
 import {
   LLMProvider,
@@ -255,7 +256,7 @@ export default class OpenRouterProvider implements LLMProvider {
 
     while (retries <= this.maxRetries) {
       try {
-        const response = await this.client.post('/chat/completions', {
+        const requestBody: any = {
           model: model,
           messages: messages,
           temperature: options?.temperature || parameters.temperature_p50,
@@ -269,7 +270,17 @@ export default class OpenRouterProvider implements LLMProvider {
           top_a: options?.topA || 0.0,
           stop: options?.stop || [],
           stream: false,
-        });
+        };
+
+        // Add structured output if specified
+        if (options?.responseFormat?.type === 'json_schema') {
+          requestBody.response_format = {
+            type: 'json_schema',
+            schema: options.responseFormat.schema
+          };
+        }
+
+        const response = await this.client.post('/chat/completions', requestBody);
 
         const completion = response.data.choices[0].message.content;
         const usage = response.data.usage;
@@ -326,7 +337,7 @@ export default class OpenRouterProvider implements LLMProvider {
     const parameters = await this.getModelParameters(model);
 
     try {
-      const response = await this.client.post('/chat/completions', {
+      const requestBody: any = {
         model: model,
         messages: messages,
         temperature: options?.temperature || parameters.temperature_p50,
@@ -340,7 +351,17 @@ export default class OpenRouterProvider implements LLMProvider {
         top_a: options?.topA || 0.0,
         stop: options?.stop || [],
         stream: true,
-      }, {
+      };
+
+      // Add structured output if specified
+      if (options?.responseFormat?.type === 'json_schema') {
+        requestBody.response_format = {
+          type: 'json_schema',
+          schema: options.responseFormat.schema
+        };
+      }
+
+      const response = await this.client.post('/chat/completions', requestBody, {
         responseType: 'stream',
       });
 

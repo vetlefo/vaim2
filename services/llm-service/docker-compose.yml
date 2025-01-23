@@ -17,6 +17,11 @@ services:
       - REDIS_PASSWORD=
       - REDIS_DB=0
       - JWT_SECRET=your-jwt-secret
+      - DEFAULT_LLM_PROVIDER=openrouter
+      - OPENROUTER_API_KEY=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
+      - OPENROUTER_MODEL=claude-3-sonnet
+      - OPENROUTER_MAX_TOKENS=4096
+      - OPENROUTER_TEMPERATURE=0.7
     depends_on:
       - redis
     networks:

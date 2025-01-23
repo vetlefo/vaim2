@@ -1,11 +1,36 @@
 # LLM Service Configuration Guide
 
+## Docker Compose Setup
+
+The LLM service uses its own docker-compose.yml file located in `services/llm-service/` instead of being part of the root docker-compose.yml. This allows for independent scaling and configuration.
+
+```bash
+# Start the LLM service stack
+cd services/llm-service
+docker-compose up -d
+```
+
+The service exposes:
+- API on port 3003
+- Metrics on port 9464
+- WebSocket on port 3004
+- Redis Commander UI on port 8081
+
 ## Environment Variables
 
 ### Core Configuration
 ```env
 NODE_ENV=development|test|production
-PORT=3000
+PORT=3003  # Changed from default 3000 to avoid conflicts
+```
+
+### CORS Configuration
+```env
+CORS_ORIGIN=*  # Allow all origins, or specify domain
+CORS_METHODS=GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS
+CORS_ALLOWED_HEADERS=Content-Type,Accept,Authorization,Last-Event-ID
+CORS_EXPOSED_HEADERS=Content-Type,Last-Event-ID
+CORS_CREDENTIALS=true
 ```
 
 ### OpenRouter Configuration
@@ -32,6 +57,13 @@ CACHE_ENABLED=true
 DEFAULT_LLM_PROVIDER=openrouter
 MAX_RETRIES=3
 REQUEST_TIMEOUT=30000
+```
+
+### Streaming Configuration
+```env
+STREAM_CHUNK_SIZE=1024  # Size of streaming chunks in bytes
+STREAM_RETRY_ATTEMPTS=3  # Number of retry attempts for failed streams
+STRUCTURED_OUTPUT_ENABLED=true  # Enable JSON schema validation for structured output
 ```
 
 ## Test Environment Configuration
@@ -75,6 +107,7 @@ The test environment includes a mock OpenRouter API that simulates:
 - Timeouts
 - Authentication errors
 - Streaming responses
+- Structured output responses
 
 ### Test Environment Variables (.env.test)
 ```env
@@ -103,6 +136,7 @@ The OpenRouter direct provider uses axios to communicate with the OpenRouter API
   siteName?: string;
   maxRetries?: number;
   timeout?: number;
+  structuredOutput?: boolean;
 }
 ```
 
@@ -119,6 +153,7 @@ The OpenRouter OpenAI provider uses the OpenAI SDK configured for OpenRouter:
   siteName?: string;
   maxRetries?: number;
   timeout?: number;
+  structuredOutput?: boolean;
 }
 ```
 
@@ -139,6 +174,7 @@ Cache keys are generated based on:
 - Frequency penalty
 - Presence penalty
 - Stop sequences
+- Structured output schema (if enabled)
 
 ## Testing
 
@@ -162,6 +198,7 @@ The service implements test-level retries for E2E tests that interact with exter
   - LLM completion endpoints
   - Streaming completion endpoints
   - GraphQL completion queries
+  - Structured output validation
 - Deterministic tests (e.g., rate limiting, caching) do not use retries
 
 ### Test Coverage Requirements
@@ -183,6 +220,7 @@ The service implements test-level retries for E2E tests that interact with exter
   - Network timeouts
   - Rate limiting
   - 5xx server errors
+  - SSE connection failures
 
 ### Error Types
 - `PROVIDER_ERROR`: Provider-specific errors
@@ -191,6 +229,8 @@ The service implements test-level retries for E2E tests that interact with exter
 - `TIMEOUT`: Request timeout
 - `MODEL_NOT_FOUND`: Model not available
 - `INVALID_REQUEST`: Invalid parameters
+- `SCHEMA_VALIDATION`: Structured output validation error
+- `SSE_ERROR`: Server-sent events error
 - `UNKNOWN`: Unexpected errors
 
 ## Monitoring
@@ -199,6 +239,7 @@ The service implements test-level retries for E2E tests that interact with exter
 - Provider health: API accessibility
 - Redis health: Connection status
 - Overall service health: Combined status
+- SSE connection health: Stream stability
 
 ### Metrics
 - Request latency
@@ -206,3 +247,5 @@ The service implements test-level retries for E2E tests that interact with exter
 - Error rate
 - Token usage
 - Provider availability
+- Stream connection stability
+- Structured output validation success rate

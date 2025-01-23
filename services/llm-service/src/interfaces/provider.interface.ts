@@ -34,6 +34,19 @@ export interface LLMResponse {
 }
 
 /**
+ * JSON Schema response format
+ */
+export interface JSONSchemaResponseFormat {
+  type: 'json_schema';
+  schema: {
+    type: 'object';
+    properties: Record<string, any>;
+    required?: string[];
+    additionalProperties?: boolean;
+  };
+}
+
+/**
  * Configuration options for LLM requests
  */
 export interface LLMRequestOptions {
@@ -49,6 +62,7 @@ export interface LLMRequestOptions {
   stop?: string[];
   stream?: boolean;
   model?: string; // Specific model to use within a provider
+  responseFormat?: JSONSchemaResponseFormat; // Structured output format
 }
 
 /**

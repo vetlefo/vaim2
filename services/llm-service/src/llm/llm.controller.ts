@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   HttpCode,
   HttpStatus,
   Param,
@@ -9,6 +10,8 @@ import {
   Query,
   Sse,
 } from '@nestjs/common';
+import { Observable, from } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { LLMService } from './llm.service';
 import {
   ChatMessageInput,
@@ -16,6 +19,13 @@ import {
   CompletionResponse,
   StreamCompletionResponse,
 } from './dto/completion.dto';
+
+interface SseMessageEvent {
+  data: string;
+  id?: string;
+  type?: string;
+  retry?: number;
+}
 
 @Controller('llm')
 export class LLMController {
@@ -31,52 +41,67 @@ export class LLMController {
   }
 
   @Sse('complete/stream')
-  async streamCompletion(
+  @Header('Content-Type', 'text/event-stream')
+  @Header('Cache-Control', 'no-cache')
+  @Header('Connection', 'keep-alive')
+  streamCompletion(
     @Query('messages') messagesJson: string,
     @Query('options') optionsJson?: string,
-  ): Promise<AsyncIterableIterator<MessageEvent>> {
+  ): Observable<SseMessageEvent> {
     const messages: ChatMessageInput[] = JSON.parse(messagesJson);
     const options: CompletionOptionsInput | undefined = optionsJson
       ? JSON.parse(optionsJson)
       : undefined;
 
-    const stream = await this.llmService.completeStream(messages, options);
+    return new Observable<SseMessageEvent>(subscriber => {
+      this.llmService.completeStream(messages, options)
+        .then(async stream => {
+          try {
+            for await (const response of stream) {
+              const data: StreamCompletionResponse = {
+                text: response.text,
+                metadata: response.metadata,
+              };
+              subscriber.next({
+                data: JSON.stringify(data),
+                type: 'message',
+              });
+            }
 
-    return this.createMessageEventStream(stream, options);
-  }
-
-  private async *createMessageEventStream(
-    stream: AsyncIterableIterator<StreamCompletionResponse>,
-    options?: CompletionOptionsInput,
-  ): AsyncIterableIterator<MessageEvent> {
-    try {
-      for await (const response of stream) {
-        const data: StreamCompletionResponse = {
-          text: response.text,
-          metadata: response.metadata,
-        };
-        yield {
-          data: JSON.stringify(data),
-          type: 'completion',
-        } as MessageEvent;
-      }
-
-      // Signal completion
-      yield {
-        data: JSON.stringify({
-          text: '[DONE]',
-          metadata: {
-            model: options?.model || 'unknown',
-            provider: 'system',
-            latency: 0,
-            timestamp: new Date().toISOString(),
-          },
-        }),
-        type: 'completion',
-      } as MessageEvent;
-    } catch (error) {
-      throw error;
-    }
+            // Signal completion
+            subscriber.next({
+              data: JSON.stringify({
+                text: '[DONE]',
+                metadata: {
+                  model: options?.model || 'unknown',
+                  provider: 'system',
+                  latency: 0,
+                  timestamp: new Date().toISOString(),
+                },
+              }),
+              type: 'message',
+            });
+            subscriber.complete();
+          } catch (error) {
+            console.error('Stream error:', error);
+            subscriber.next({
+              data: JSON.stringify({
+                text: '[ERROR]',
+                metadata: {
+                  error: error.message,
+                  timestamp: new Date().toISOString(),
+                },
+              }),
+              type: 'error',
+            });
+            subscriber.complete();
+          }
+        })
+        .catch(error => {
+          console.error('Stream initialization error:', error);
+          subscriber.error(error);
+        });
+    });
   }
 
   @Get('providers')

@@ -26,6 +26,15 @@ This phase focuses on implementing a "mindblowing" UI framework for VAIM2 that h
 - Context menu for node/edge operations
 - Notification system for user feedback
 - Chat-based node creation with automatic labeling
+- Enhanced LLM Integration
+  - ✅ OpenRouter API integration
+  - 🔄 Streaming responses
+    - ✅ Basic streaming implementation
+    - 🚧 Structured output streaming
+    - 🚧 CORS and EventSource compatibility
+  - ✅ Health monitoring
+    - ✅ Redis connection status
+    - ✅ Provider health checks
 
 ### 4. State Management
 - Redux store with typed slices ✅
@@ -117,6 +126,105 @@ interface GraphNode {
 - [ ] Add keyboard shortcuts
 - [ ] Improve accessibility
 
+## Setup & Configuration
+
+### Prerequisites
+- Node.js >= 18
+- npm >= 9
+- Redis (for session management)
+
+### Environment Variables
+```bash
+# Service URLs
+VITE_AUTH_URL=http://localhost:3001
+VITE_GRAPH_ANALYTICS_URL=http://localhost:3002
+VITE_LLM_URL=http://localhost:3003
+
+# WebSocket Configuration
+VITE_WS_URL=http://localhost:3004
+WS_PORT=3004
+
+# Redis Configuration (for Socket.IO)
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+# Authentication
+JWT_SECRET=your-jwt-secret  # Must match Auth service
+
+# LLM Service Configuration
+VITE_LLM_STREAM_ENABLED=true
+VITE_LLM_STRUCTURED_OUTPUT=true
+VITE_LLM_CORS_ORIGIN=http://localhost:3000
+VITE_LLM_STREAM_CHUNK_SIZE=1024
+VITE_LLM_STREAM_RETRY_ATTEMPTS=3
+
+# Optional Features
+VITE_ENABLE_ANALYTICS=true
+VITE_ENABLE_HPC=false      # Enable when HPC integration is ready
+```
+
+### Installation & Development
+```bash
+# Install dependencies
+cd services/ui-service
+npm install
+
+# Start development servers
+npm run dev:all    # Both UI and WebSocket
+# Or separately:
+npm run dev        # UI only (Vite)
+npm run server     # WebSocket server only
+
+# Production build
+npm run build
+npm run preview
+```
+
+### Docker Setup
+```yaml
+ui-service:
+  build:
+    context: ./services/ui-service
+    dockerfile: Dockerfile
+  ports:
+    - "3000:3000"    # Vite/React
+    - "3004:3004"    # WebSocket
+  environment:
+    - VITE_AUTH_URL=http://auth-service:3001
+    - VITE_GRAPH_ANALYTICS_URL=http://graph-analytics-service:3002
+    - VITE_LLM_URL=http://llm-service:3003
+    - VITE_WS_URL=http://localhost:3004
+    - WS_PORT=3004
+    - REDIS_HOST=redis
+    - REDIS_PORT=6379
+    - JWT_SECRET=${JWT_SECRET}
+  depends_on:
+    - redis
+    - auth-service
+    - graph-analytics-service
+    - llm-service
+```
+
+### Health Checks
+- UI: http://localhost:3000/health
+- WebSocket: http://localhost:3004/health
+
+### Common Issues & Debugging
+1. WebSocket Connection Failures
+   - Verify WebSocket server is running
+   - Check VITE_WS_URL configuration
+   - Confirm Redis connection
+
+2. Service Connection Issues
+   - Verify service URLs in environment variables
+   - Check service health endpoints
+   - Confirm network connectivity
+
+3. Authentication Problems
+   - Verify JWT_SECRET matches Auth service
+   - Check token expiration
+   - Confirm Auth service connectivity
+
 ## Dependencies
 - Cytoscape.js for graph visualization
 - Socket.io for real-time features
@@ -144,12 +252,24 @@ interface GraphNode {
 - Core UI components
 - Optimized node label handling
 - Cross-platform zoom behavior
+- Enhanced LLM integration
+  - OpenRouter API integration
+  - Basic streaming implementation
+  - CORS configuration
+  - Health monitoring improvements
+  - Redis connection monitoring
 
 ### In Progress
 - Edge creation system
 - Node type selection
 - Content editing
 - Collaborative features
+- Structured output streaming
+  - JSON schema validation
+  - Schema-based response formatting
+- EventSource compatibility
+  - CORS headers for streaming
+  - Connection stability improvements
 
 ### Planned
 - Advanced layouts
