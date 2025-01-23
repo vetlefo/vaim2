@@ -33,7 +33,16 @@
     - ✅ Graph rendering improvements
     - ✅ Style property optimizations
   - 🔄 Advanced Visualization Features
-  - 🔄 Enhanced LLM Integration
+  - ✅ Enhanced LLM Integration
+    - ✅ OpenRouter API integration
+    - 🔄 Streaming responses
+      - ✅ Basic streaming implementation
+      - 🚧 Structured output streaming
+      - 🚧 CORS and EventSource compatibility
+    - ✅ Rate limiting & caching
+    - ✅ Health monitoring
+      - ✅ Redis connection monitoring
+      - ✅ Provider health checks
 
 ### Next Phase (Phase 4)
 Focus: Advanced Analytics Implementation
@@ -68,11 +77,6 @@ Focus: Advanced Analytics Implementation
 
 ### Services
 
-#### UI Service 🚀
-- [README](services/ui-service/README.md) - UI service overview
-- [Testing Guidelines](services/ui-service/docs/testing-guidelines.md) - Comprehensive testing strategy
-- [Implementation Status](implementation/phase3.5-prototype.md) - Current implementation details
-
 #### Auth Service ✅
 - [README](services/auth-service/README.md) - Authentication service overview
 - [Implementation Guide](services/auth-service/docs/implementation.md)
@@ -93,7 +97,10 @@ Focus: Advanced Analytics Implementation
 - [Implementation Status](services/llm-service/docs/implementation.md) - Current implementation details
 - [API Documentation](services/llm-service/docs/api.md) - API endpoints and usage
 - [Architecture](services/llm-service/docs/architecture.md) - System design
-- [Configuration](services/llm-service/docs/configuration.md) - Setup guide
+- [Configuration](services/llm-service/docs/configuration.md) - Setup guide and environment variables
+  - Docker Compose setup in services/llm-service/
+  - OpenRouter API key configuration
+  - Service ports (3003 API, 9464 metrics, 3004 WebSocket)
 - [Cache System](services/llm-service/docs/cache.md) - Redis implementation ✅
 - [Rate Limiting](services/llm-service/docs/rate-limiting.md) - Rate limiting implementation ✅
 - [Testing Documentation](services/llm-service/docs/testing.md) - Test coverage and procedures ✅
@@ -125,6 +132,7 @@ Focus: Advanced Analytics Implementation
 - [Docker Setup](tools/docker.md) - Docker configuration and usage guide
 - [Claude Integration](tools/claude.md) - Claude AI integration documentation
 - [Secrets Management](tools/secrets-management.md) - Global secrets and security guide
+
 ### Environment Configuration
 #### Service Ports & Networking
 - **Auth Service**: 1337:3000 (external:internal)

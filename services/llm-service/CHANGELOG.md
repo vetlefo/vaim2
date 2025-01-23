@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.3.1] - 2025-01-23
+### Added
+- CORS configuration for streaming endpoints
+- Structured output support with JSON schema validation
+- Enhanced SSE error handling and connection management
+- Improved streaming response formatting
+
+### Changed
+- Updated NestJS controller to properly handle SSE connections
+- Enhanced error handling in streaming responses
+- Improved CORS headers for EventSource compatibility
+
+### Fixed
+- CORS configuration for SSE connections
+- EventSource error handling in streaming endpoints
+- Redis connection error handling and retry logic
+
+## [0.3.0] - 2025-01-22
+### Added
+- OpenRouter API integration for unified model access
+- Environment variables for OpenRouter configuration
+- Basic completion endpoint with JSON response
+- Streaming completion endpoint with SSE support
+- Health monitoring endpoint with Redis and provider status
+- Rate limiting and caching configuration
+
+### Changed
+- Updated docker-compose.yml with OpenRouter environment variables
+- Enhanced error handling for provider-specific errors
+
+### Fixed
+- Provider initialization and validation
+- Redis connection handling
+
 ## [0.1.1] - 2025-01-22
 ### Fixed
 - Fixed health check endpoint to use correct path `/api/v1/monitoring/health`

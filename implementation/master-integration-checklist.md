@@ -53,9 +53,9 @@ By default, the root docker-compose.yml uses:
 
 ### 1.4 LLM Service
 - [x] Typically depends on Redis (for caching/rate-limiting)
-- [ ] If it's in the root docker-compose.yml, do `docker-compose up -d llm-service`
+- [x] If it's in the root docker-compose.yml, do `docker-compose up -d llm-service`
 - [x] If it has its own docker-compose.yml, run `docker compose -f services/llm-service/docker-compose.yml up -d`
-- [ ] Confirm you have set your OpenRouter API key in .env for accessing all LLM models
+- [x] Confirm you have set your OpenRouter API key in .env for accessing all LLM models
 
 ### 1.5 UI Prototype
 - [ ] Often runs on port 3000 or 5173
@@ -123,14 +123,19 @@ curl -X POST http://localhost:3003/api/v1/llm/complete \
   -H "Content-Type: application/json" \
   -d '{"messages":[{"role":"user","content":"Hello from VAIM2 aggregator!"}]}'
 ```
-- [ ] Look for a JSON response with text, metadata, etc.
+- [x] Look for a JSON response with text, metadata, etc.
 
 ### 2.2 Test Streaming
-- [ ] curl -N http://localhost:3003/api/v1/llm/complete/stream ... with SSE headers
-- [ ] Observe partial responses chunked back if the service supports streaming
+- [x] curl -N http://localhost:3003/api/v1/llm/complete/stream ... with SSE headers
+- [x] Observe partial responses chunked back if the service supports streaming
+- [ ] Test structured output streaming with JSON schema validation
+- [ ] Verify CORS headers for EventSource compatibility
+- [ ] Check error handling in streaming responses
 
 ### 2.3 Check Logs
-- [ ] `docker-compose logs llm-service` to confirm no authentication or rate-limit errors
+- [x] `docker-compose logs llm-service` to confirm no authentication or rate-limit errors
+- [x] Monitor Redis connection status and error handling
+- [x] Verify proper cleanup of streaming connections
 
 # E. Graph Analytics & SQT Integration
 
