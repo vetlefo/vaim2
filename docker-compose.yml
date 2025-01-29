@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   auth-service:
     build: ./services/auth-service
@@ -40,7 +38,7 @@ services:
       KAFKA_CLIENT_ID: graph-analytics-service
       KAFKA_GROUP_ID: graph-analytics-group
       REDIS_HOST: redis
-      REDIS_PORT: 6379
+      REDIS_PORT: 6382
       JWT_SECRET: ${JWT_SECRET:-your-jwt-secret}
     networks:
       - auth-network
@@ -115,7 +113,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6380:6379"  # Changed from 6379 to avoid conflicts
+      - "6382:6379"
     command: redis-server --appendonly yes
     volumes:
       - redis-data:/data

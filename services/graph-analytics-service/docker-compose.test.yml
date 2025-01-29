@@ -48,7 +48,7 @@ services:
   test-redis:
     image: redis:7-alpine
     ports:
-      - "6380:6379"  # Different port to avoid conflicts with dev environment
+      - "6610:6666"  # Different port to avoid conflicts with dev environment
     command: redis-server --appendonly yes
     networks:
       - test-network
@@ -72,7 +72,7 @@ services:
       KAFKA_CLIENT_ID: graph-analytics-service-test
       KAFKA_GROUP_ID: graph-analytics-group-test
       REDIS_HOST: test-redis
-      REDIS_PORT: 6379
+      REDIS_PORT: 6666
       JWT_SECRET: test-jwt-secret
       RATE_LIMIT_WINDOW: 60000
       RATE_LIMIT_MAX_REQUESTS: 100
