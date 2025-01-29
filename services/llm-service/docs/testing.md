@@ -85,6 +85,59 @@ it('should handle streaming responses', async () => {
     });
   }
 });
+
+// New: Test for structured output streaming
+it('should handle structured output streaming', async () => {
+  const mockStream = createMockStream([
+    'data: {"choices":[{"delta":{"content":"{\\\"location\\":\\"San"}}]}\n\n',
+    'data: {"choices":[{"delta":{"content":" Francisco\\",\\"temperature\\":22"}}]}\n\n',
+    'data: {"choices":[{"delta":{"content":",\\"conditions\\":\\"sunny\\"}"}}]}\n\n',
+  ]);
+
+  mockAxiosInstance.post.mockResolvedValueOnce({ data: mockStream });
+
+  const stream = await provider.completeStream(mockMessages, {
+    responseFormat: {
+      type: 'json_schema',
+      schema: {
+        type: 'object',
+        properties: {
+          location: { type: 'string' },
+          temperature: { type: 'number' },
+          conditions: { type: 'string' },
+        },
+      },
+    },
+  });
+
+  const chunks = [];
+  for await (const chunk of stream) {
+    chunks.push(chunk);
+  }
+
+  // Combine chunks and parse final JSON
+  const finalJson = JSON.parse(chunks.map(c => c.text).join(''));
+  expect(finalJson).toMatchObject({
+    location: 'San Francisco',
+    temperature: 22,
+    conditions: 'sunny',
+  });
+});
+
+// New: Test for CORS and EventSource compatibility
+it('should handle EventSource connections with CORS', async () => {
+  const mockEventSource = new EventSource('/api/v1/llm/complete/stream');
+  
+  expect(mockEventSource.withCredentials).toBe(false);
+  expect(mockEventSource.readyState).toBe(EventSource.CONNECTING);
+  
+  // Verify CORS headers
+  const headers = mockAxiosInstance.defaults.headers;
+  expect(headers['Access-Control-Allow-Origin']).toBe('*');
+  expect(headers['Access-Control-Allow-Methods']).toBe('GET, POST, OPTIONS');
+  expect(headers['Access-Control-Allow-Headers']).toContain('Content-Type');
+  expect(headers['Access-Control-Allow-Headers']).toContain('Last-Event-ID');
+});
 ```
 
 ## Test Categories
@@ -203,6 +256,9 @@ Current coverage areas:
 - Provider implementations
 - Error handling
 - Streaming functionality
+  - Basic streaming ✅
+  - Structured output streaming ✅
+  - CORS and EventSource compatibility ✅
 - Rate limiting
 - Cache integration
 - Service layer
@@ -243,6 +299,9 @@ npm run test:coverage
    - Verify error handling
    - Test buffer management
    - Check metadata consistency
+   - Test structured output parsing
+   - Verify CORS headers
+   - Test EventSource compatibility
 
 3. Mock Implementation
    - Use realistic mock data

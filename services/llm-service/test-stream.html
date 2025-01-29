@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LLM Service Stream Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #output { 
+            white-space: pre-wrap; 
+            border: 1px solid #ccc; 
+            padding: 10px; 
+            margin-top: 10px;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+        }
+        button { margin-top: 10px; padding: 5px 10px; }
+        .error { color: red; }
+        .info { color: blue; }
+        .controls {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #eee;
+            background: #f9f9f9;
+        }
+        .checkbox-group {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h2>LLM Service Stream Test</h2>
+    <div class="controls">
+        <input type="text" id="message" placeholder="Enter your message" style="width: 300px">
+        <div class="checkbox-group">
+            <label>
+                <input type="checkbox" id="useStructured" onchange="toggleStructuredOptions()">
+                Use Structured Output
+            </label>
+        </div>
+        <div id="structuredOptions" style="display: none; margin-top: 10px;">
+            <select id="schemaType" onchange="updateSchema()">
+                <option value="weather">Weather Schema</option>
+                <option value="analysis">Analysis Schema</option>
+            </select>
+            <div id="schemaPreview" style="margin-top: 10px; font-size: 0.9em; color: #666;"></div>
+        </div>
+        <button onclick="startStream()">Send</button>
+    </div>
+    <div id="output"></div>
+
+    <script>
+        const schemas = {
+            weather: {
+                name: "weather",
+                strict: true,
+                schema: {
+                    type: "object",
+                    properties: {
+                        location: {
+                            type: "string",
+                            description: "City or location name"
+                        },
+                        temperature: {
+                            type: "number",
+                            description: "Temperature in Celsius"
+                        },
+                        conditions: {
+                            type: "string",
+                            description: "Weather conditions description"
+                        }
+                    },
+                    required: ["location", "temperature", "conditions"],
+                    additionalProperties: false
+                }
+            },
+            analysis: {
+                name: "analysis",
+                strict: true,
+                schema: {
+                    type: "object",
+                    properties: {
+                        summary: {
+                            type: "string",
+                            description: "Brief summary of the analysis"
+                        },
+                        keyPoints: {
+                            type: "array",
+                            items: {
+                                type: "string"
+                            },
+                            description: "Key points from the analysis"
+                        },
+                        confidence: {
+                            type: "number",
+                            description: "Confidence score between 0 and 1"
+                        }
+                    },
+                    required: ["summary", "keyPoints", "confidence"],
+                    additionalProperties: false
+                }
+            }
+        };
+
+        function updateSchema() {
+            const schemaType = document.getElementById('schemaType').value;
+            const schemaPreview = document.getElementById('schemaPreview');
+            schemaPreview.textContent = `Schema: ${JSON.stringify(schemas[schemaType].schema, null, 2)}`;
+        }
+
+        function toggleStructuredOptions() {
+            const options = document.getElementById('structuredOptions');
+            options.style.display = document.getElementById('useStructured').checked ? 'block' : 'none';
+            if (document.getElementById('useStructured').checked) {
+                updateSchema();
+            }
+        }
+
+        function log(message, type = 'normal') {
+            const output = document.getElementById('output');
+            const line = document.createElement('div');
+            line.textContent = message;
+            if (type === 'error') line.className = 'error';
+            if (type === 'info') line.className = 'info';
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function startStream() {
+            const message = document.getElementById('message').value;
+            if (!message.trim()) {
+                log('Please enter a message', 'error');
+                return;
+            }
+
+            const output = document.getElementById('output');
+            output.innerHTML = ''; // Clear previous output
+            
+            log('Starting stream...', 'info');
+
+            const messages = [{
+                role: 'user',
+                content: message
+            }];
+
+            const options = {};
+            const useStructured = document.getElementById('useStructured').checked;
+            
+            if (useStructured) {
+                const schemaType = document.getElementById('schemaType').value;
+                if (schemas[schemaType]) {
+                    options.responseFormat = {
+                        type: "json_schema",
+                        schema: schemas[schemaType].schema
+                    };
+                    log(`Using ${schemaType} schema`, 'info');
+                }
+            }
+
+            // Encode the messages and options for the URL
+            const params = new URLSearchParams({
+                messages: JSON.stringify(messages)
+            });
+            if (Object.keys(options).length > 0) {
+                params.append('options', JSON.stringify(options));
+            }
+            
+            try {
+                // Create EventSource for SSE connection - Updated port to 3009
+                const eventSource = new EventSource(`http://localhost:3009/api/v1/llm/complete/stream?${params.toString()}`);
+
+                let responseText = '';
+
+                eventSource.addEventListener('message', function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.text === '[DONE]') {
+                            eventSource.close();
+                            log('\n--- Stream completed ---', 'info');
+                            
+                            // Try to parse and format JSON response if using structured output
+                            if (useStructured && responseText) {
+                                try {
+                                    const jsonResponse = JSON.parse(responseText);
+                                    output.textContent = JSON.stringify(jsonResponse, null, 2);
+                                } catch (e) {
+                                    log('Failed to parse structured output as JSON', 'error');
+                                }
+                            }
+                        } else {
+                            responseText += data.text;
+                            output.textContent = responseText;
+                        }
+                    } catch (error) {
+                        log(`Error parsing message: ${error.message}`, 'error');
+                        console.error('Message parsing error:', error);
+                    }
+                });
+
+                eventSource.addEventListener('error', function(error) {
+                    log('EventSource error - Connection failed or server sent an error', 'error');
+                    console.error('EventSource error:', error);
+                    eventSource.close();
+                });
+
+                eventSource.addEventListener('open', function() {
+                    log('Connection established', 'info');
+                });
+            } catch (error) {
+                log(`Failed to create EventSource: ${error.message}`, 'error');
+                console.error('EventSource creation error:', error);
+            }
+        }
+
+        // Initialize schema preview
+        updateSchema();
+    </script>
+</body>
+</html>
