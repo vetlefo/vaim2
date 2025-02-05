@@ -1,174 +1,43 @@
-import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import Redis from 'ioredis';
-
-interface RedisOptions {
-  host: string;
-  port: number;
-  password?: string;
-  db?: number;
-}
-
-interface RedisInfo {
-  keyspace_hits?: string;
-  used_memory?: string;
-  connected_clients?: string;
-  total_connections_received?: string;
-}
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(RedisService.name);
-  private client: Redis;
+  private redisClient: Redis;
 
-  constructor(
-    @Inject('REDIS_OPTIONS')
-    private readonly options: RedisOptions,
-  ) {}
+  constructor() {
+    this.redisClient = new Redis({
+      host: process.env.REDIS_HOST,
+      port: parseInt(process.env.REDIS_PORT, 10),
+      password: process.env.REDIS_PASSWORD,
+      db: parseInt(process.env.REDIS_DB, 10),
+      retryStrategy: (times) => {
+        const delay = Math.min(times * 50, 2000);
+        return delay;
+      },
+      reconnectOnError: (err) => {
+        const targetError = 'READONLY';
+        if (err.message.includes(targetError)) {
+          return 1;
+        }
+      },
+    });
+  }
 
   async onModuleInit() {
     try {
-      this.client = new Redis({
-        host: this.options.host,
-        port: this.options.port,
-        password: this.options.password,
-        db: this.options.db,
-        retryStrategy: (times) => {
-          const delay = Math.min(times * 50, 2000);
-          return delay;
-        },
-        maxRetriesPerRequest: 3,
-      });
-
-      this.client.on('error', (error) => {
-        this.logger.error('Redis client error:', error);
-      });
-
-      this.client.on('connect', () => {
-        this.logger.log('Connected to Redis');
-      });
-
-      await this.client.ping();
+      await this.redisClient.ping();
+      console.log('Redis client connected');
     } catch (error) {
-      this.logger.error('Failed to connect to Redis:', error);
-      throw error;
+      console.error('Redis client connection error:', error);
     }
   }
 
   async onModuleDestroy() {
-    if (this.client) {
-      await this.client.quit();
-    }
+    await this.redisClient.quit();
   }
 
-  async get(key: string): Promise<string | null> {
-    try {
-      return await this.client.get(key);
-    } catch (error) {
-      this.logger.error(`Error getting key ${key}:`, error);
-      throw error;
-    }
-  }
-
-  async set(key: string, value: string, ttl?: number): Promise<void> {
-    try {
-      if (ttl) {
-        await this.client.set(key, value, 'EX', ttl);
-      } else {
-        await this.client.set(key, value);
-      }
-    } catch (error) {
-      this.logger.error(`Error setting key ${key}:`, error);
-      throw error;
-    }
-  }
-
-  async del(key: string): Promise<void> {
-    try {
-      await this.client.del(key);
-    } catch (error) {
-      this.logger.error(`Error deleting key ${key}:`, error);
-      throw error;
-    }
-  }
-
-  async exists(key: string): Promise<boolean> {
-    try {
-      const result = await this.client.exists(key);
-      return result === 1;
-    } catch (error) {
-      this.logger.error(`Error checking existence of key ${key}:`, error);
-      throw error;
-    }
-  }
-
-  async flushDb(): Promise<void> {
-    try {
-      await this.client.flushdb();
-    } catch (error) {
-      this.logger.error('Error flushing database:', error);
-      throw error;
-    }
-  }
-
-  async keys(pattern: string): Promise<string[]> {
-    try {
-      return await this.client.keys(pattern);
-    } catch (error) {
-      this.logger.error(`Error getting keys with pattern ${pattern}:`, error);
-      throw error;
-    }
-  }
-
-  async ttl(key: string): Promise<number> {
-    try {
-      return await this.client.ttl(key);
-    } catch (error) {
-      this.logger.error(`Error getting TTL for key ${key}:`, error);
-      throw error;
-    }
-  }
-
-  async ping(): Promise<boolean> {
-    try {
-      const result = await this.client.ping();
-      return result === 'PONG';
-    } catch (error) {
-      this.logger.error('Error pinging Redis:', error);
-      return false;
-    }
-  }
-
-  async info(): Promise<RedisInfo> {
-    try {
-      const info = await this.client.info();
-      const infoObj: RedisInfo = {};
-      
-      info.split('\n').forEach(line => {
-        const [key, value] = line.split(':');
-        if (key && value) {
-          infoObj[key.trim()] = value.trim();
-        }
-      });
-
-      return infoObj;
-    } catch (error) {
-      this.logger.error('Error getting Redis info:', error);
-      throw error;
-    }
-  }
-
-  async getStats(): Promise<{ keyCount: number; memoryUsage: number }> {
-    try {
-      const info = await this.info();
-      const keys = await this.keys('*');
-      
-      return {
-        keyCount: keys.length,
-        memoryUsage: parseInt(info.used_memory || '0', 10),
-      };
-    } catch (error) {
-      this.logger.error('Error getting Redis stats:', error);
-      throw error;
-    }
+  getClient() {
+    return this.redisClient;
   }
 }

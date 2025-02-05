@@ -21,7 +21,7 @@ export class Neo4jService implements OnModuleInit, OnModuleDestroy {
     this.driver = neo4j.driver(uri, neo4j.auth.basic(user, password), {
       maxConnectionPoolSize: 50,
     });
-    
+
     // Verify connection
     try {
       await this.driver.verifyConnectivity();
@@ -42,17 +42,16 @@ export class Neo4jService implements OnModuleInit, OnModuleDestroy {
     query: string,
     params: Record<string, any>,
     operation: string
-  ): Promise<T> {
+  ): Promise<Result> {
     return this.prometheus.trackOperation(`neo4j_${operation}`, async () => {
       const session = this.getSession();
       try {
         const result = await session.executeWrite(
           async (tx: ManagedTransaction) => {
-            const response = await tx.run(query, params);
-            return response.records;
+            return await tx.run(query, params);
           }
         );
-        return result as unknown as T;
+        return result;
       } finally {
         await session.close();
       }
@@ -154,5 +153,58 @@ export class Neo4jService implements OnModuleInit, OnModuleDestroy {
       params,
       'update_hpc_result'
     );
+  }
+
+  // Additional Methods
+  async runPageRank(params: any) {
+    return this.executeQuery(
+      'CALL algo.pageRank() YIELD node, score RETURN node, score',
+      params,
+      'run_page_rank'
+    );
+  }
+
+  async findCommunities(params: any) {
+    return this.executeQuery(
+      'CALL algo.louvain() YIELD nodeId, community RETURN nodeId, community',
+      params,
+      'find_communities'
+    );
+  }
+
+  async calculateNodeSimilarity(params: any) {
+    return this.executeQuery(
+      'CALL algo.similarity.cosine.stream({data:[[1,2],[3,4]]}) YIELD node1, node2, similarity RETURN node1, node2, similarity',
+      params,
+      'calculate_node_similarity'
+    );
+  }
+
+  async findShortestPath(params: any) {
+    return this.executeQuery(
+      'MATCH (a:Node), (b:Node) WHERE id(a) = $startNodeId AND id(b) = $endNodeId CALL algo.shortestPath.stream(a, b) YIELD nodeId, cost RETURN nodeId, cost',
+      params,
+      'find_shortest_path'
+    );
+  }
+
+  async createGraphProjection(params: any) {
+    return this.executeQuery(
+      'CALL gds.graph.project($graphName, $nodeLabels, $relationshipTypes)',
+      params,
+      'create_graph_projection'
+    );
+  }
+
+  async dropGraphProjection(graphName: string) {
+    return this.executeQuery(
+      'CALL gds.graph.drop($graphName)',
+      { graphName },
+      'drop_graph_projection'
+    );
+  }
+
+  async verifyConnection() {
+    return this.driver.verifyConnectivity();
   }
 }

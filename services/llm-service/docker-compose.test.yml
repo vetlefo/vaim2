@@ -16,7 +16,7 @@ services:
       - OPENROUTER_API_KEY=test-key
       - SITE_URL=http://localhost:3000
       - SITE_NAME=VAIM2 Test
-      - OPENROUTER_BASE_URL=http://mock-openrouter:3000/api/v1
+      - OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
       - RATE_LIMIT_WINDOW=60000
       - RATE_LIMIT_MAX_REQUESTS=100
       - RATE_LIMIT_PROVIDER_WINDOW=3600000
@@ -29,8 +29,6 @@ services:
     depends_on:
       redis-test:
         condition: service_healthy
-      mock-openrouter:
-        condition: service_started
     networks:
       - llm-test-network
 
@@ -49,31 +47,15 @@ services:
       - OPENROUTER_API_KEY=test-key
       - SITE_URL=http://localhost:3000
       - SITE_NAME=VAIM2 E2E
-      - OPENROUTER_BASE_URL=http://mock-openrouter:3000/api/v1
+      - OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
     volumes:
       - .:/app
       - /app/node_modules
     depends_on:
       redis-test:
         condition: service_healthy
-      mock-openrouter:
-        condition: service_started
     networks:
       - llm-test-network
-
-  mock-openrouter:
-    build:
-      context: ./test/mock-openrouter
-    container_name: mock-openrouter
-    ports:
-      - "3001:3000"
-    networks:
-      - llm-test-network
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/v1/models"]
-      interval: 1s
-      timeout: 3s
-      retries: 30
 
   redis-test:
     image: redis:7-alpine

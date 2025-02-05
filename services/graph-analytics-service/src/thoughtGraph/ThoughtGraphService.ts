@@ -31,9 +31,11 @@ export class ThoughtGraphService {
       type: thought.type,
       status: thought.status,
       metadata: thought.metadata
-    }) as Array<{ get(key: string): { properties: ThoughtNode } }>;
+    });
     
-    return result[0].get('t').properties;
+    const record = result.records[0];
+    const node = record.get('t');
+    return node.properties as ThoughtNode;
   }
 
   async addThought(params: {

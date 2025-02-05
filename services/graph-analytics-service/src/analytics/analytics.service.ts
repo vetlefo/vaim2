@@ -8,6 +8,7 @@ import {
   GraphProjectionRequestDto,
   AnalyticsResultDto,
 } from './dto/graph-analytics.dto';
+import { Record } from 'neo4j-driver';
 
 @Injectable()
 export class AnalyticsService {
@@ -26,7 +27,7 @@ export class AnalyticsService {
 
       return {
         success: true,
-        data: result.records.map(record => ({
+        data: result.records.map((record: Record) => ({
           name: record.get('name'),
           score: record.get('score'),
         })),
@@ -51,7 +52,7 @@ export class AnalyticsService {
 
       return {
         success: true,
-        data: result.records.map(record => ({
+        data: result.records.map((record: Record) => ({
           name: record.get('name'),
           communityId: record.get('communityId'),
           intermediateCommunityIds: record.get('intermediateCommunityIds'),
@@ -77,7 +78,7 @@ export class AnalyticsService {
 
       return {
         success: true,
-        data: result.records.map(record => ({
+        data: result.records.map((record: Record) => ({
           node1: record.get('node1Name'),
           node2: record.get('node2Name'),
           similarity: record.get('similarity'),
@@ -95,18 +96,16 @@ export class AnalyticsService {
 
   async findShortestPath(request: ShortestPathRequestDto): Promise<AnalyticsResultDto> {
     try {
-      const result = await this.neo4jService.findShortestPath(
-        request.startNodeId,
-        request.endNodeId,
-        {
-          relationshipType: request.relationshipType,
-          weightProperty: request.weightProperty,
-        },
-      );
+      const result = await this.neo4jService.findShortestPath({
+        startNodeId: request.startNodeId,
+        endNodeId: request.endNodeId,
+        relationshipType: request.relationshipType,
+        weightProperty: request.weightProperty,
+      });
 
       return {
         success: true,
-        data: result.records.map(record => ({
+        data: result.records.map((record: Record) => ({
           path: record.get('path'),
           costs: record.get('costs'),
           totalCost: record.get('totalCost'),
@@ -168,6 +167,12 @@ export class AnalyticsService {
 
   // Expose Neo4j connection verification
   async verifyNeo4jConnection(): Promise<boolean> {
-    return this.neo4jService.verifyConnection();
+    try {
+      await this.neo4jService.verifyConnection();
+      return true;
+    } catch (error) {
+      this.logger.error('Failed to verify Neo4j connection:', error);
+      return false;
+    }
   }
 }

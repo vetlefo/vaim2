@@ -39,10 +39,24 @@
             </label>
         </div>
         <div id="structuredOptions" style="display: none; margin-top: 10px;">
-            <select id="schemaType" onchange="updateSchema()">
-                <option value="weather">Weather Schema</option>
-                <option value="analysis">Analysis Schema</option>
-            </select>
+            <div class="select-group">
+                <label>Model:</label>
+                <select id="modelSelect" style="margin-right: 10px;">
+                    <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet</option>
+                    <option value="openai/o1">OpenAI O1</option>
+                    <option value="google/gemini-pro">Google Gemini Pro</option>
+                    <option value="deepseek/deepseek-v3">DeepSeek V3</option>
+                    <option value="minimax/minimax-01">MiniMax 01</option>
+                    <option value="mistral/mistral-7b">Mistral 7B</option>
+                    <option value="mistral/ministral-8b">Ministral 8B</option>
+                </select>
+
+                <label>Schema Type:</label>
+                <select id="schemaType" onchange="updateSchema()">
+                    <option value="weather">Weather Schema</option>
+                    <option value="analysis">Analysis Schema</option>
+                </select>
+            </div>
             <div id="schemaPreview" style="margin-top: 10px; font-size: 0.9em; color: #666;"></div>
         </div>
         <button onclick="startStream()">Send</button>
@@ -138,14 +152,20 @@
             
             log('Starting stream...', 'info');
 
+            // Get selected model
+            const selectedModel = document.getElementById('modelSelect').value;
+            log(`Using model: ${selectedModel}`, 'info');
+
             const messages = [{
                 role: 'user',
                 content: message
             }];
 
-            const options = {};
+            const options = {
+                model: selectedModel
+            };
+
             const useStructured = document.getElementById('useStructured').checked;
-            
             if (useStructured) {
                 const schemaType = document.getElementById('schemaType').value;
                 if (schemas[schemaType]) {
@@ -157,6 +177,43 @@
                 }
             }
 
+            // Display model capabilities
+            const modelCapabilities = {
+                'anthropic/claude-3.5-sonnet': {
+                    contextWindow: '200K tokens',
+                    strengths: 'Strong reasoning, analysis, and code understanding'
+                },
+                'openai/o1': {
+                    contextWindow: '200K tokens',
+                    strengths: 'Advanced STEM, complex reasoning'
+                },
+                'google/gemini-pro': {
+                    contextWindow: '2M tokens',
+                    strengths: 'Large context, multimodal capabilities'
+                },
+                'deepseek/deepseek-v3': {
+                    contextWindow: '128K tokens',
+                    strengths: 'Code analysis, open-source focus'
+                },
+                'minimax/minimax-01': {
+                    contextWindow: '1M tokens',
+                    strengths: 'Cost-effective large context processing'
+                },
+                'mistral/mistral-7b': {
+                    contextWindow: '32K tokens',
+                    strengths: 'Fast, efficient for simple tasks'
+                },
+                'mistral/ministral-8b': {
+                    contextWindow: '128K tokens',
+                    strengths: 'Good balance of performance and efficiency'
+                }
+            };
+
+            const capabilities = modelCapabilities[selectedModel];
+            if (capabilities) {
+                log(`Model Capabilities:\nContext: ${capabilities.contextWindow}\nStrengths: ${capabilities.strengths}`, 'info');
+            }
+
             // Encode the messages and options for the URL
             const params = new URLSearchParams({
                 messages: JSON.stringify(messages)
@@ -166,16 +223,25 @@
             }
             
             try {
-                // Create EventSource for SSE connection - Updated port to 3009
-                const eventSource = new EventSource(`http://localhost:3009/api/v1/llm/complete/stream?${params.toString()}`);
+                // Create EventSource for SSE connection using port 3009 from LLM service
+                const eventSource = new EventSource(`http://localhost:3003/api/v1/llm/complete/stream?${params.toString()}`);
 
                 let responseText = '';
+
+                // Add timeout handling
+                const timeout = setTimeout(() => {
+                    if (eventSource.readyState !== 2) { // 2 = CLOSED
+                        log('Request timed out. Closing connection...', 'error');
+                        eventSource.close();
+                    }
+                }, 30000); // 30 second timeout
 
                 eventSource.addEventListener('message', function(event) {
                     try {
                         const data = JSON.parse(event.data);
                         if (data.text === '[DONE]') {
                             eventSource.close();
+                            clearTimeout(timeout);
                             log('\n--- Stream completed ---', 'info');
                             
                             // Try to parse and format JSON response if using structured output
@@ -183,8 +249,10 @@
                                 try {
                                     const jsonResponse = JSON.parse(responseText);
                                     output.textContent = JSON.stringify(jsonResponse, null, 2);
+                                    log('Successfully parsed structured output', 'info');
                                 } catch (e) {
                                     log('Failed to parse structured output as JSON', 'error');
+                                    console.error('JSON parsing error:', e);
                                 }
                             }
                         } else {
@@ -197,14 +265,37 @@
                     }
                 });
 
+                // Enhanced error handling
                 eventSource.addEventListener('error', function(error) {
-                    log('EventSource error - Connection failed or server sent an error', 'error');
+                    clearTimeout(timeout);
+                    const errorMessage = error.data ? JSON.parse(error.data).error : 'Unknown error';
+                    log(`Connection error: ${errorMessage}`, 'error');
+                    
+                    // Check for specific error types
+                    if (errorMessage.includes('rate limit')) {
+                        log('Rate limit exceeded. Please wait before trying again.', 'error');
+                    } else if (errorMessage.includes('context length')) {
+                        log('Input too long for selected model. Try a model with larger context window.', 'error');
+                    } else if (errorMessage.includes('invalid api key')) {
+                        log('Authentication failed. Please check API configuration.', 'error');
+                    }
+                    
                     console.error('EventSource error:', error);
                     eventSource.close();
                 });
 
+                // Connection status handling
                 eventSource.addEventListener('open', function() {
                     log('Connection established', 'info');
+                    log(`Streaming with ${selectedModel}...`, 'info');
+                });
+
+                // Cleanup on page unload
+                window.addEventListener('beforeunload', function() {
+                    if (eventSource) {
+                        eventSource.close();
+                        clearTimeout(timeout);
+                    }
                 });
             } catch (error) {
                 log(`Failed to create EventSource: ${error.message}`, 'error');
