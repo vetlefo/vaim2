@@ -1,0 +1,70 @@
+# System Architecture
+The system consists of multiple microservices, including authentication, language modeling, graph analytics, and UI components. Each service is designed to perform specific functions, and they interact with each other to provide a comprehensive solution.
+## Services
+### Authentication Service
+The authentication service is responsible for managing user authentication and authorization. It uses OAuth 2.0 and JWT strategies for authentication.
+```typescript
+// workdir/services/auth-service/src/auth/auth.service.ts
+import { Injectable } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+
+@Injectable()
+export class AuthService {
+  // ...
+}
+```
+### Language Modeling Service
+The language modeling service provides language modeling capabilities using deep learning models.
+```typescript
+// workdir/services/llm-service/src/llm/llm.service.ts
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
+export class LlmService {
+  // ...
+}
+```
+### Graph Analytics Service
+The graph analytics service provides graph analytics capabilities using graph algorithms and data structures.
+```typescript
+// workdir/services/graph-analytics-service/src/thoughtGraph/ThoughtGraphService.ts
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
+export class ThoughtGraphService {
+  // ...
+}
+```
+### UI Component
+The UI component provides a user interface for interacting with the system.
+```typescript
+// workdir/services/ui-service/src/App.tsx
+import React from 'react';
+
+const App = () => {
+  // ...
+};
+```
+## Interactions
+The services interact with each other using RESTful APIs and message queues.
+```mermaid
+graph LR
+  A[Authentication Service] -->| authenticate |->> B[Language Modeling Service]
+  B -->| language model |->> C[Graph Analytics Service]
+  C -->| graph analytics |->> D[UI Component]
+```
+## Data Flows
+The data flows between the services are as follows:
+```mermaid
+graph LR
+  A[User Data] -->| authenticate |->> B[Authentication Service]
+  B -->| user data |->> C[Language Modeling Service]
+  C -->| language model |->> D[Graph Analytics Service]
+  D -->| graph analytics |->> E[UI Component]
+```
+## Setup Instructions
+To set up the system, follow these steps:
+
+1. Install the dependencies: `npm install` or `pnpm install`
+2. Start the services: `npm start` or `pnpm start`
+3. Configure the services: `npm run configure` or `pnpm run configure`
