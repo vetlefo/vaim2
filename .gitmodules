@@ -1,0 +1,3 @@
+[submodule "freestyle-chess/smooth-prompt-hub"]
+	path = freestyle-chess/smooth-prompt-hub
+	url = https://github.com/vetlefo/smooth-prompt-hub
